@@ -177,6 +177,23 @@ elif selected_tab == "Availability Settings":
 
     if availability_passcode == AVAILABILITY_PASSCODE:
         st.success("Access granted to Availability Settings.")
-        st.info("Availability settings panel coming soon... Here you'll be able to enable/disable specific slots.")
+        available_file = "available_slots.csv"
+        if os.path.exists(available_file):
+            availability_df = pd.read_csv(available_file)
+        else:
+            availability_df = pd.DataFrame({"slot": single_slots, "available": [True]*len(single_slots)})
+
+        selected_available = st.multiselect(
+            "Select available time slots:",
+            options=single_slots,
+            default=availability_df[availability_df["available"]]["slot"].tolist(),
+            key="availability_selector"
+        )
+
+        availability_df["available"] = availability_df["slot"].isin(selected_available)
+
+        if st.button("Save Availability"):
+            availability_df.to_csv(available_file, index=False)
+            st.success("Availability updated successfully!")
     elif availability_passcode:
         st.error("Incorrect passcode.")
