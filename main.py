@@ -166,3 +166,17 @@ elif selected_tab == "Admin View":
                 st.success(f"Successfully rescheduled to {new_slot}!")
     elif passcode_input:
         st.error("Incorrect passcode.")
+
+# Availability Settings
+elif selected_tab == "Availability Settings":
+    st.markdown("---")
+    with st.expander("🔒 Availability Admin Access"):
+        availability_passcode = st.text_input("Enter availability admin passcode:", type="password")
+
+    AVAILABILITY_PASSCODE = "atlabadmin2025"
+
+    if availability_passcode == AVAILABILITY_PASSCODE:
+        st.success("Access granted to Availability Settings.")
+        st.info("Availability settings panel coming soon... Here you'll be able to enable/disable specific slots.")
+    elif availability_passcode:
+        st.error("Incorrect passcode.")
