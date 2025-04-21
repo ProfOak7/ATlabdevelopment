@@ -143,7 +143,7 @@ if name and email and student_id:
 elif selected_tab == "Admin View":
     st.markdown("---")
     with st.expander("🔐 Admin Access"):
-    passcode_input = st.text_input("Enter admin passcode:", type="password")
+        passcode_input = st.text_input("Enter admin passcode:", type="password")
 
     if passcode_input == ADMIN_PASSCODE:
         st.success("Access granted.")
