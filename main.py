@@ -126,14 +126,19 @@ if name and email and student_id:
         allowed_slots = single_slots
 
     if dsps:
-        double_slot_options = [label for label in double_blocks if selected_day in label and all(s in allowed_slots and s not in bookings_df["slot"].values for s in double_blocks[label])]
-        if double_slot_options:
-            selected_block = st.selectbox("Choose a double time block:", double_slot_options)
-            if st.button("Select This Time Block"):
-                st.session_state["selected_slot"] = selected_block
-                st.session_state["confirming"] = True
-                st.rerun()
-        else:
+        grouped_blocks = {}
+        for label in double_blocks:
+            day = " ".join(label.split(" ")[:2])
+            if selected_day in label and all(s in allowed_slots and s not in bookings_df["slot"].values for s in double_blocks[label]):
+                grouped_blocks.setdefault(day, []).append(label)
+
+        selected_block = None
+        for day in sorted(grouped_blocks.keys(), key=lambda d: datetime.strptime(d.split(" ")[1], "%m/%d/%y")):
+            with st.expander(f"{day} ({len(grouped_blocks[day])} available)"):
+                selected_block = st.radio("Choose a double time block:", grouped_blocks[day], key=f"radio_{day}")
+                if st.button(f"Select {day}"):
+                    st.session_state["selected_slot"] = selected_block
+                    st.session_state["confirming"] = True
             st.info("No available double blocks for this day.")
     else:
         available_slots = [s for s in slots_by_day[selected_day] if s not in bookings_df["slot"].values and s in allowed_slots]
@@ -187,11 +192,18 @@ elif selected_tab == "Admin View":
             current_booking = bookings_df.iloc[index]
 
             all_available_slots = [s for s in single_slots if s not in bookings_df["slot"].values or s == current_booking["slot"]]
-            new_slot = st.selectbox("Choose a new time slot", all_available_slots)
+                        if current_booking["dsps"]:
+                available_blocks = [label for label, pair in double_blocks.items() if all(s not in bookings_df["slot"].values or s == current_booking["slot"] for s in pair)]
+                new_block = st.selectbox("Choose a new DSPS time block", available_blocks)
+            else:
+                new_slot = st.selectbox("Choose a new time slot", all_available_slots)
 
-            if st.button("Reschedule"):
-                bookings_df.at[index, "slot"] = new_slot
-                bookings_df.to_csv(BOOKINGS_FILE, index=False)
+                        if st.button("Reschedule"):
+                if current_booking["dsps"]:
+                    old_email = current_booking["email"]
+                    old_student_id = current_booking["student_id"]
+                    old_name = current_booking["name"]
+                    bookings_df = bookings_df[~((bookings_df["email
                 st.success(f"Successfully rescheduled to {new_slot}!")
     elif passcode_input:
         st.error("Incorrect passcode.")
