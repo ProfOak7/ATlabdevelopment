@@ -194,9 +194,9 @@ elif selected_tab == "Admin View":
             all_available_slots = [s for s in single_slots if s not in bookings_df["slot"].values or s == current_booking["slot"]]
 
             if current_booking["dsps"]:
-                available_blocks = [label for label, pair in double_blocks.items() if all(s not in bookings_df["slot"].values or s == current_booking["slot"] for s in pair)]
-                new_block = st.selectbox("Choose a new DSPS time block", available_blocks)
-            else:
+    available_blocks = [label for label, pair in double_blocks.items() if all(s not in bookings_df["slot"].values or s == current_booking["slot"] for s in pair)]
+    new_block = st.selectbox("Choose a new DSPS time block", available_blocks)
+else:
                 new_slot = st.selectbox("Choose a new time slot", all_available_slots)
             else:
                 new_slot = st.selectbox("Choose a new time slot", all_available_slots)
