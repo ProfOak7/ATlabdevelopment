@@ -197,8 +197,8 @@ elif selected_tab == "Admin View":
                 available_blocks = []
                 for label, pair in double_blocks.items():
                     if all(s not in bookings_df["slot"].values or s == current_booking["slot"] for s in pair):
-                        start_time = pair[0].split(" ")[-1].split("–")[0]
-                        end_time = pair[1].split(" ")[-1].split("–")[-1]
+                        start_time = pair[0].rsplit(" ", 2)[-2] + " " + pair[0].split(" ")[-1]
+                        end_time = pair[1].rsplit(" ", 2)[-2] + " " + pair[1].split(" ")[-1]
                         day_label = " ".join(pair[0].split(" ")[:2])
                         formatted_label = f"{day_label} {start_time}–{end_time}"
                         available_blocks.append((formatted_label, label))  # Ensure only one block per day is added
