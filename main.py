@@ -18,18 +18,15 @@ if "confirming" not in st.session_state:
 # Load or create bookings file
 if os.path.exists(BOOKINGS_FILE):
     bookings_df = pd.read_csv(BOOKINGS_FILE)
-            else:
-                new_slot = st.selectbox("Choose a new time slot", all_available_slots)
-            else:
-                new_slot = st.selectbox("Choose a new time slot", all_available_slots)
+            
 
-                                                        if st.button("Reschedule"):
+                                                                if st.button("Reschedule"):
                 if current_booking["dsps"]:
                     old_email = current_booking["email"]
                     old_student_id = current_booking["student_id"]
                     old_name = current_booking["name"]
-                    bookings_df = bookings_df[~((bookings_df["email"] == old_email) & (bookings_df["student_id"] == old_student_id))]
-                                    for s in double_blocks[new_block]:
+                                    bookings_df = bookings_df[~((bookings_df["email"] == old_email) & (bookings_df["student_id"] == old_student_id))]
+                                                    for s in double_blocks[new_block]:
                         new_booking = pd.DataFrame([{"name": old_name, "email": old_email, "student_id": old_student_id, "dsps": True, "slot": s}])
                         bookings_df = pd.concat([bookings_df, new_booking], ignore_index=True)
                     st.success(f"Successfully rescheduled to {new_block}!")
