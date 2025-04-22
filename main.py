@@ -143,8 +143,6 @@ if name and email and student_id:
                 st.rerun()
         else:
             st.info("No available slots for this day.")
-    else:
-        st.info("No available slots for this day.")
 
     if st.session_state["confirming"] and st.session_state["selected_slot"]:
         st.subheader("Confirm Your Appointment")
