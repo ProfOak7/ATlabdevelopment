@@ -97,10 +97,6 @@ dsps = st.checkbox("I am a DSPS student")
 if st.button("Need to Reschedule?"):
         st.info("To reschedule your appointment, please speak with the current professor in the AT Lab.")
 
-
-
-
-
 if email:
     if not (email.lower().endswith("@my.cuesta.edu") or email.lower().endswith("@cuesta.edu")):
         st.error("Please use your official Cuesta email ending in @my.cuesta.edu or @cuesta.edu")
@@ -122,15 +118,31 @@ if name and email and student_id:
     st.subheader("Available Time Slots")
     selected_day = st.selectbox("Choose a day:", list(slots_by_day.keys()))
 
-            available_file = "available_slots.csv"
-        if os.path.exists(available_file):
-            availability_df = pd.read_csv(available_file)
-            allowed_slots = availability_df[availability_df["available"]]["slot"].tolist()
-            available_slots = [s for s in slots_by_day[selected_day] if s not in bookings_df["slot"].values and s in allowed_slots]
-        else:
-            available_slots = [s for s in slots_by_day[selected_day] if s not in bookings_df["slot"].values]
+    available_file = "available_slots.csv"
+    if os.path.exists(available_file):
+        availability_df = pd.read_csv(available_file)
+        allowed_slots = availability_df[availability_df["available"]]["slot"].tolist()
+    else:
+        allowed_slots = single_slots
 
-    if available_slots:
+    if dsps:
+        day_blocks = {k: v for k, v in double_blocks.items() if all(s in allowed_slots and s not in bookings_df["slot"].values for s in v)}
+        for label, pair in day_blocks.items():
+            if selected_day in label:
+                if st.button(f"Select {label}"):
+                    st.session_state["selected_slot"] = label
+                    st.session_state["confirming"] = True
+                    st.rerun()
+    else:
+        available_slots = [s for s in slots_by_day[selected_day] if s not in bookings_df["slot"].values and s in allowed_slots]
+        if available_slots:
+            selected_time = st.selectbox("Choose a time:", available_slots)
+            if st.button("Select This Time"):
+                st.session_state["selected_slot"] = selected_time
+                st.session_state["confirming"] = True
+                st.rerun()
+        else:
+            st.info("No available slots for this day.")
         selected_time = st.selectbox("Choose a time:", available_slots)
         if st.button("Select This Time"):
             st.session_state["selected_slot"] = selected_time
@@ -143,8 +155,13 @@ if name and email and student_id:
         st.subheader("Confirm Your Appointment")
         st.write(f"You have selected: **{st.session_state['selected_slot']}**")
         if st.button("Confirm"):
-            new_booking = pd.DataFrame([{ "name": name, "email": email, "student_id": student_id, "dsps": dsps, "slot": st.session_state["selected_slot"] }])
-            bookings_df = pd.concat([bookings_df, new_booking], ignore_index=True)
+            if dsps and " and " in st.session_state["selected_slot"]:
+                for s in double_blocks[st.session_state["selected_slot"]]:
+                    new_booking = pd.DataFrame([{ "name": name, "email": email, "student_id": student_id, "dsps": dsps, "slot": s }])
+                    bookings_df = pd.concat([bookings_df, new_booking], ignore_index=True)
+            else:
+                new_booking = pd.DataFrame([{ "name": name, "email": email, "student_id": student_id, "dsps": dsps, "slot": st.session_state["selected_slot"] }])
+                bookings_df = pd.concat([bookings_df, new_booking], ignore_index=True)
             bookings_df.to_csv(BOOKINGS_FILE, index=False)
             st.success(f"Successfully booked {st.session_state['selected_slot']}!")
             st.session_state["selected_slot"] = None
