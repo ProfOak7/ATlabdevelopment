@@ -208,7 +208,8 @@ elif selected_tab == "Admin View":
                 if display_labels:
                     selected_display_label = st.selectbox("Choose a new DSPS time block", display_labels)
                     new_block = block_lookup[selected_display_label]
-                else:
+                st.write(f"Selected block: **{selected_display_label}**")
+            else:
                     st.info("No DSPS time blocks available for rescheduling.")
                     new_block = None
                 # Convert tuple back to block label for use
