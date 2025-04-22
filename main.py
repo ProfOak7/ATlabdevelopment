@@ -126,13 +126,12 @@ if name and email and student_id:
         allowed_slots = single_slots
 
     if dsps:
-        day_blocks = {k: v for k, v in double_blocks.items() if all(s in allowed_slots and s not in bookings_df["slot"].values for s in v)}
-        for label, pair in day_blocks.items():
-            if selected_day in label:
-                if st.button(f"Select {label}"):
-                    st.session_state["selected_slot"] = label
-                    st.session_state["confirming"] = True
-                    st.rerun()
+        double_slot_options = [label for label in double_blocks if selected_day in label and all(s in allowed_slots and s not in bookings_df["slot"].values for s in double_blocks[label])]
+        selected_block = st.selectbox("Choose a double time block:", double_slot_options)
+        if st.button("Select This Time Block"):
+            st.session_state["selected_slot"] = selected_block
+            st.session_state["confirming"] = True
+            st.rerun()
     else:
         available_slots = [s for s in slots_by_day[selected_day] if s not in bookings_df["slot"].values and s in allowed_slots]
         if available_slots:
