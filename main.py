@@ -205,8 +205,12 @@ elif selected_tab == "Admin View":
                 available_blocks.sort()
                 display_labels = [label for label, _ in available_blocks]
                 block_lookup = {label: block for label, block in available_blocks}
-                selected_display_label = st.selectbox("Choose a new DSPS time block", display_labels)
-                new_block = block_lookup[selected_display_label]
+                if display_labels:
+                    selected_display_label = st.selectbox("Choose a new DSPS time block", display_labels)
+                    new_block = block_lookup[selected_display_label]
+                else:
+                    st.info("No DSPS time blocks available for rescheduling.")
+                    new_block = None
                 # Convert tuple back to block label for use
                 new_block = block_lookup[selected_display_label]
             else:
