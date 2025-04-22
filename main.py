@@ -194,7 +194,20 @@ elif selected_tab == "Admin View":
             all_available_slots = [s for s in single_slots if s not in bookings_df["slot"].values or s == current_booking["slot"]]
 
             if current_booking["dsps"]:
-                available_blocks = [label for label, pair in double_blocks.items() if all(s not in bookings_df["slot"].values or s == current_booking["slot"] for s in pair)]
+                available_blocks = []
+                for label, pair in double_blocks.items():
+                    if all(s not in bookings_df["slot"].values or s == current_booking["slot"] for s in pair):
+                        # Format the block as a readable label
+                        start_time = pair[0].split(" ")[-1].split("–")[0]
+                        end_time = pair[1].split(" ")[-1].split("–")[-1]
+                        day_label = " ".join(pair[0].split(" ")[:2])
+                        formatted_label = f"{day_label} {start_time}–{end_time}"
+                        available_blocks.append((formatted_label, label))
+                available_blocks.sort()
+                display_labels = [label for label, _ in available_blocks]
+                block_lookup = {label: block for label, block in available_blocks}
+                selected_display_label = st.selectbox("Choose a new DSPS time block", display_labels)
+                new_block = block_lookup[selected_display_label]
                 new_block = st.selectbox("Choose a new DSPS time block", available_blocks)
             else:
                 new_slot = st.selectbox("Choose a new time slot", all_available_slots)
