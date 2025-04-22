@@ -156,7 +156,7 @@ if name and email and student_id:
         st.write(f"You have selected: **{st.session_state['selected_slot']}**")
         if st.button("Confirm"):
             if dsps and " and " in st.session_state["selected_slot"]:
-                for s in double_blocks[st.session_state["selected_slot"]]:
+                for s in double_blocks[new_block]:
                     new_booking = pd.DataFrame([{ "name": name, "email": email, "student_id": student_id, "dsps": dsps, "slot": s }])
                     bookings_df = pd.concat([bookings_df, new_booking], ignore_index=True)
             else:
@@ -194,34 +194,14 @@ elif selected_tab == "Admin View":
             all_available_slots = [s for s in single_slots if s not in bookings_df["slot"].values or s == current_booking["slot"]]
 
             if current_booking["dsps"]:
-                grouped_blocks = {}
-                for label, pair in double_blocks.items():
-                    if all(s not in bookings_df["slot"].values or s == current_booking["slot"] for s in pair):
-                        start_time = pair[0].rsplit(" ", 2)[-2] + " " + pair[0].split(" ")[-1]
-                        end_time = pair[1].rsplit(" ", 2)[-2] + " " + pair[1].split(" ")[-1]
-                        day_label = " ".join(pair[0].split(" ")[:2])
-                        formatted_label = f"{day_label} {start_time}–{end_time}"
-                        grouped_blocks.setdefault(day_label, []).append((formatted_label, label))  # Ensure only one block per day is added
-                block_lookup = {}
-                for day in sorted(grouped_blocks.keys(), key=lambda d: datetime.strptime(d.split(" ")[1], "%m/%d/%y")):
-                    with st.expander(f"{day} ({len(grouped_blocks[day])} available)"):
-                        options = [label for label, _ in grouped_blocks[day]]
-                        selected_display_label = st.radio("Choose a double time block:", options, key=f"radio_admin_{day}")
-                        for label, block in grouped_blocks[day]:
-                            block_lookup[label] = block
-                        if st.button(f"Select {day}"):
-                            new_block = block_lookup[selected_display_label]
-                            st.session_state["selected_slot"] = new_block
-                            st.session_state["confirming"] = True
-                    new_block = block_lookup[selected_display_label]
-                    st.write(f"Selected block: **{selected_display_label}**")
-                else:
-                    st.info("No DSPS time blocks available for rescheduling.")
-                    new_block = None
+                available_blocks = [label for label, pair in double_blocks.items() if all(s not in bookings_df["slot"].values or s == current_booking["slot"] for s in pair)]
+                new_block = st.selectbox("Choose a new DSPS time block", available_blocks)
+            else:
+                new_slot = st.selectbox("Choose a new time slot", all_available_slots)
             else:
                 new_slot = st.selectbox("Choose a new time slot", all_available_slots)
 
-                                            if st.button("Reschedule") and (not current_booking["dsps"] or st.session_state.get("selected_slot")):
+                                            if st.button("Reschedule"):
                 if current_booking["dsps"]:
                     old_email = current_booking["email"]
                     old_student_id = current_booking["student_id"]
