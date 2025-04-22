@@ -203,12 +203,14 @@ elif selected_tab == "Admin View":
                         day_label = " ".join(pair[0].split(" ")[:2])
                         formatted_label = f"{day_label} {start_time}–{end_time}"
                         available_blocks.append((formatted_label, label))
+                        break  # Ensure only one block per day is added
                 available_blocks.sort()
                 display_labels = [label for label, _ in available_blocks]
                 block_lookup = {label: block for label, block in available_blocks}
                 selected_display_label = st.selectbox("Choose a new DSPS time block", display_labels)
                 new_block = block_lookup[selected_display_label]
-                new_block = st.selectbox("Choose a new DSPS time block", available_blocks)
+                # Convert tuple back to block label for use
+                new_block = block_lookup[selected_display_label]
             else:
                 new_slot = st.selectbox("Choose a new time slot", all_available_slots)
 
