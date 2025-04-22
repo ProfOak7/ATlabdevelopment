@@ -221,7 +221,7 @@ elif selected_tab == "Admin View":
             else:
                 new_slot = st.selectbox("Choose a new time slot", all_available_slots)
 
-                        if st.button("Reschedule") and (not current_booking["dsps"] or st.session_state.get("selected_slot")):
+                                    if st.button("Reschedule") and (not current_booking["dsps"] or st.session_state.get("selected_slot")):
                 if current_booking["dsps"]:
                     old_email = current_booking["email"]
                     old_student_id = current_booking["student_id"]
