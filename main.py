@@ -199,7 +199,7 @@ elif selected_tab == "Admin View":
             else:
                 new_slot = st.selectbox("Choose a new time slot", all_available_slots)
 
-                                    if st.button("Reschedule"):
+            if st.button("Reschedule"):
                 if current_booking["dsps"]:
                     old_email = current_booking["email"]
                     old_student_id = current_booking["student_id"]
@@ -212,8 +212,7 @@ elif selected_tab == "Admin View":
                 else:
                     bookings_df.at[index, "slot"] = new_slot
                     st.success(f"Successfully rescheduled to {new_slot}!")
-                bookings_df.to_csv(BOOKINGS_FILE, index=False)
-                st.success(f"Successfully rescheduled to {new_slot}!")
+            bookings_df.to_csv(BOOKINGS_FILE, index=False)
     elif passcode_input:
         st.error("Incorrect passcode.")
 
