@@ -194,19 +194,25 @@ elif selected_tab == "Admin View":
             all_available_slots = [s for s in single_slots if s not in bookings_df["slot"].values or s == current_booking["slot"]]
 
             if current_booking["dsps"]:
-                available_blocks = []
+                grouped_blocks = {}
                 for label, pair in double_blocks.items():
                     if all(s not in bookings_df["slot"].values or s == current_booking["slot"] for s in pair):
                         start_time = pair[0].rsplit(" ", 2)[-2] + " " + pair[0].split(" ")[-1]
                         end_time = pair[1].rsplit(" ", 2)[-2] + " " + pair[1].split(" ")[-1]
                         day_label = " ".join(pair[0].split(" ")[:2])
                         formatted_label = f"{day_label} {start_time}–{end_time}"
-                        available_blocks.append((formatted_label, label))  # Ensure only one block per day is added
-                available_blocks.sort()
-                display_labels = [label for label, _ in available_blocks]
-                block_lookup = {label: block for label, block in available_blocks}
-                if display_labels:
-                    selected_display_label = st.selectbox("Choose a new DSPS time block", display_labels)
+                        grouped_blocks.setdefault(day_label, []).append((formatted_label, label))  # Ensure only one block per day is added
+                block_lookup = {}
+                for day in sorted(grouped_blocks.keys(), key=lambda d: datetime.strptime(d.split(" ")[1], "%m/%d/%y")):
+                    with st.expander(f"{day} ({len(grouped_blocks[day])} available)"):
+                        options = [label for label, _ in grouped_blocks[day]]
+                        selected_display_label = st.radio("Choose a double time block:", options, key=f"radio_admin_{day}")
+                        for label, block in grouped_blocks[day]:
+                            block_lookup[label] = block
+                        if st.button(f"Select {day}"):
+                            new_block = block_lookup[selected_display_label]
+                            st.session_state["selected_slot"] = new_block
+                            st.session_state["confirming"] = True
                     new_block = block_lookup[selected_display_label]
                     st.write(f"Selected block: **{selected_display_label}**")
                 else:
@@ -215,13 +221,13 @@ elif selected_tab == "Admin View":
             else:
                 new_slot = st.selectbox("Choose a new time slot", all_available_slots)
 
-            if st.button("Reschedule"):
+                        if st.button("Reschedule") and (not current_booking["dsps"] or st.session_state.get("selected_slot")):
                 if current_booking["dsps"]:
                     old_email = current_booking["email"]
                     old_student_id = current_booking["student_id"]
                     old_name = current_booking["name"]
                     bookings_df = bookings_df[~((bookings_df["email"] == old_email) & (bookings_df["student_id"] == old_student_id))]
-                    for s in double_blocks[new_block]:
+                    for s in double_blocks[st.session_state["selected_slot"]]:
                         new_booking = pd.DataFrame([{"name": old_name, "email": old_email, "student_id": old_student_id, "dsps": True, "slot": s}])
                         bookings_df = pd.concat([bookings_df, new_booking], ignore_index=True)
                     st.success(f"Successfully rescheduled to {new_block}!")
