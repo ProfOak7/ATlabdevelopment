@@ -69,9 +69,20 @@ if selected_tab == "Sign-Up":
         for day in sorted_days:
             group = grouped.get_group(day)
             with st.expander(f"{day} ({len(group)} sign-up{'s' if len(group) != 1 else ''})"):
-                view = group[["first_name", "slot"]].sort_values("slot")
-                view = view.rename(columns={"first_name": "Student", "slot": "Time Slot"}).reset_index(drop=True)
-                st.dataframe(view)
+                # Merge DSPS double bookings into a single row
+                grouped_view = group.sort_values("slot").groupby(["first_name"])
+                display_rows = []
+                for name, slots in grouped_view:
+                    sorted_slots = slots["slot"].tolist()
+                    if len(sorted_slots) == 2:
+                        start = sorted_slots[0].rsplit(" ", 1)[-1].split("–")[0]
+                        end = sorted_slots[1].rsplit(" ", 1)[-1].split("–")[-1]
+                        label = f"{sorted_slots[0].rsplit(' ', 1)[0]} {start}–{end}"
+                        display_rows.append({"Student": name, "Time Slot": label})
+                    else:
+                        for s in sorted_slots:
+                            display_rows.append({"Student": name, "Time Slot": s})
+                st.dataframe(pd.DataFrame(display_rows))
     else:
         st.info("No appointments have been scheduled yet.")
 
@@ -111,7 +122,13 @@ if name and email and student_id:
     st.subheader("Available Time Slots")
     selected_day = st.selectbox("Choose a day:", list(slots_by_day.keys()))
 
-    available_slots = [s for s in slots_by_day[selected_day] if s not in bookings_df["slot"].values]
+            available_file = "available_slots.csv"
+        if os.path.exists(available_file):
+            availability_df = pd.read_csv(available_file)
+            allowed_slots = availability_df[availability_df["available"]]["slot"].tolist()
+            available_slots = [s for s in slots_by_day[selected_day] if s not in bookings_df["slot"].values and s in allowed_slots]
+        else:
+            available_slots = [s for s in slots_by_day[selected_day] if s not in bookings_df["slot"].values]
 
     if available_slots:
         selected_time = st.selectbox("Choose a time:", available_slots)
