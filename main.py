@@ -143,11 +143,6 @@ if name and email and student_id:
                 st.rerun()
         else:
             st.info("No available slots for this day.")
-        selected_time = st.selectbox("Choose a time:", available_slots)
-        if st.button("Select This Time"):
-            st.session_state["selected_slot"] = selected_time
-            st.session_state["confirming"] = True
-            st.rerun()
     else:
         st.info("No available slots for this day.")
 
