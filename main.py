@@ -70,9 +70,9 @@ if selected_tab == "Sign-Up":
             group = grouped.get_group(day)
             with st.expander(f"{day} ({len(group)} sign-up{'s' if len(group) != 1 else ''})"):
                 # Merge DSPS double bookings into a single row
-                grouped_view = group.sort_values("slot").groupby(["first_name"])
+                grouped_view = group.sort_values("slot").groupby(["first_name", "email"])
                 display_rows = []
-                for name, slots in grouped_view:
+                for (name, _), slots in grouped_view:
                     sorted_slots = slots["slot"].tolist()
                     if len(sorted_slots) == 2:
                         start = sorted_slots[0].rsplit(" ", 1)[-1].split("–")[0]
