@@ -111,17 +111,22 @@ if name and email and student_id:
             lambda s: datetime.strptime(s.split(" ")[1], "%m/%d/%y").isocalendar().week
         )
         if selected_week in booked_weeks.values:
-            # Count how many times they’ve signed up this week
-            weekly_slots = bookings_df[(bookings_df["email"] == email) & (
+            # Allow student to select which existing booking to reschedule this week
+            weekly_bookings = bookings_df[(bookings_df["email"] == email) & (
                 bookings_df["slot"].apply(lambda s: datetime.strptime(s.split(" ")[1], "%m/%d/%y").isocalendar().week == selected_week)
             )]
 
-            if len(weekly_slots) == 1:
+            if len(weekly_bookings) == 1:
                 # Allow reschedule: remove old one
-                bookings_df = bookings_df[~((bookings_df["email"] == email) & (bookings_df["slot"].isin(weekly_slots["slot"])))].copy()
+                bookings_df = bookings_df[~((bookings_df["email"] == email) & (bookings_df["slot"].isin(weekly_bookings["slot"])))].copy()
                 st.info("Your previous booking for this week will be replaced with the new one.")
+            elif len(weekly_bookings) == 2 and weekly_bookings.iloc[0]['dsps']:
+                # DSPS reschedule
+                for s in weekly_bookings["slot"]:
+                    bookings_df = bookings_df[~((bookings_df["email"] == email) & (bookings_df["slot"] == s))].copy()
+                st.info("Your DSPS booking for this week will be replaced with the new one.")
             else:
-                st.warning("You’ve already booked a slot that week and rescheduled once. Further changes require help from a professor.")
+                st.warning("You’ve already booked and rescheduled once this week. Further changes require help from a professor.")
                 st.stop()
 
     st.subheader("Available Time Slots")
