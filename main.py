@@ -183,7 +183,7 @@ elif selected_tab == "Admin View":
         st.subheader("Download Today's Sign-Ups")
         today_str = datetime.today().strftime("%m/%d/%y")
         todays_df = bookings_df[bookings_df["slot"].str.contains(today_str)].copy()
-        todays_df["slot_dt"] = todays_df["slot"].apply(lambda x: datetime.strptime(x.split(" ")[1] + " " + x.split(" ")[-1].split("–")[0], "%m/%d/%y %I:%M"))
+        todays_df["slot_dt"] = todays_df["slot"].apply(lambda x: datetime.strptime(f"{x.split()[1]} {x.split()[2].split('–')[0]} {x.split()[3]}", "%m/%d/%y %I:%M %p"))
         todays_df = todays_df.sort_values("slot_dt").drop(columns=["slot_dt"])
         st.download_button("📅 Download Today's Appointments", todays_df.to_csv(index=False), file_name="todays_appointments.csv")
 
