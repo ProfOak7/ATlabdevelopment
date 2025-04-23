@@ -187,7 +187,22 @@ elif selected_tab == "Admin View":
             current_booking = bookings_df.iloc[index]
 
             all_available_slots = [s for s in single_slots if s not in bookings_df["slot"].values or s == current_booking["slot"]]
-            new_slot = st.selectbox("Choose a new time slot", all_available_slots)
+            slot_display_options = []
+            slot_lookup = {}
+            for label, pair in double_blocks.items():
+                if current_booking["dsps"] and all(s not in bookings_df["slot"].values or s == current_booking["slot"] for s in pair):
+                    start_time = pair[0].rsplit(" ", 1)[-1].split("–")[0]
+                    end_time = pair[1].rsplit(" ", 1)[-1].split("–")[-1]
+                    day_label = " ".join(pair[0].split(" ")[:2])
+                    display_label = f"{day_label} {start_time}–{end_time}"
+                    slot_display_options.append(display_label)
+                    slot_lookup[display_label] = pair[0]  # store only the first slot to identify the pair later
+
+            if current_booking["dsps"]:
+                new_display_label = st.selectbox("Choose a new 30-minute block", slot_display_options)
+                new_slot = slot_lookup[new_display_label]
+            else:
+                new_slot = st.selectbox("Choose a new time slot", all_available_slots)
 
             if st.button("Reschedule"):
                 if current_booking["dsps"]:
