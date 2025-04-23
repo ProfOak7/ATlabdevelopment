@@ -112,27 +112,27 @@ if name and email and student_id:
             lambda s: datetime.strptime(s.split(" ")[1], "%m/%d/%y").isocalendar().week
         )
         if selected_week in booked_weeks.values:
-            # Allow student to select which existing booking to reschedule this week
             weekly_bookings = bookings_df[(bookings_df["email"] == email) & (
                 bookings_df["slot"].apply(lambda s: datetime.strptime(s.split(" ")[1], "%m/%d/%y").isocalendar().week == selected_week)
             )]
 
-                            
+            # Prevent rescheduling on the same day
+            today_str = datetime.today().strftime("%m/%d/%y")
+            booking_dates = [b.split(" ")[1] for b in weekly_bookings["slot"]]
+            if today_str in booking_dates:
+                st.warning("You cannot reschedule an appointment on the same day. Please speak with a professor if needed.")
+                st.stop()
 
-                                        if len(weekly_bookings) == 1:
-                # Allow reschedule: remove old one
+            if len(weekly_bookings) == 1:
                 bookings_df = bookings_df[~((bookings_df["email"] == email) & (bookings_df["slot"].isin(weekly_bookings["slot"])))].copy()
-                                                    st.info("Your previous booking for this week will be replaced with the new one.")
-                    self_reschedule_flag = True
-                self_reschedule_flag = True
-                                        elif len(weekly_bookings) == 2 and weekly_bookings.iloc[0]['dsps']:
-                # DSPS reschedule
+                st.info("Your previous booking for this week will be replaced with the new one.")
+            elif len(weekly_bookings) == 2 and weekly_bookings.iloc[0]['dsps']:
                 for s in weekly_bookings["slot"]:
                     bookings_df = bookings_df[~((bookings_df["email"] == email) & (bookings_df["slot"] == s))].copy()
-                                                    st.info("Your DSPS booking for this week will be replaced with the new one.")
-                    self_reschedule_flag = True
-                self_reschedule_flag = True
+                st.info("Your DSPS booking for this week will be replaced with the new one.")
             else:
+                st.warning("Unable to determine which appointment to reschedule. Please contact an administrator.")
+                st.stop()
                 # Prevent rescheduling on the same day
                 today_str = datetime.today().strftime("%m/%d/%y")
                 booking_dates = [b.split(" ")[1] for b in weekly_bookings["slot"]]
@@ -178,8 +178,7 @@ if name and email and student_id:
             if dsps and " and " in st.session_state["selected_slot"]:
                 for s in double_blocks[st.session_state["selected_slot"]]:
                                                 new_booking = pd.DataFrame([{ "name": name, "email": email, "student_id": student_id, "dsps": dsps, "slot": s }])
-                                        new_booking["self_rescheduled"] = self_reschedule_flag
-                    bookings_df = pd.concat([bookings_df, new_booking], ignore_index=True)
+                                                            bookings_df = pd.concat([bookings_df, new_booking], ignore_index=True)
             else:
                                 new_booking = pd.DataFrame([{ "name": name, "email": email, "student_id": student_id, "dsps": dsps, "slot": st.session_state["selected_slot"] }])
                 new_booking["self_rescheduled"] = self_reschedule_flag
