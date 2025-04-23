@@ -179,6 +179,14 @@ elif selected_tab == "Admin View":
         st.dataframe(bookings_df)
         st.download_button("📄 Download CSV", bookings_df.to_csv(index=False), file_name="bookings.csv")
 
+        # New feature: Download today's sign-ups in chronological order
+        st.subheader("Download Today's Sign-Ups")
+        today_str = datetime.today().strftime("%m/%d/%y")
+        todays_df = bookings_df[bookings_df["slot"].str.contains(today_str)].copy()
+        todays_df["slot_dt"] = todays_df["slot"].apply(lambda x: datetime.strptime(x.split(" ")[1] + " " + x.split(" ")[-1].split("–")[0], "%m/%d/%y %I:%M"))
+        todays_df = todays_df.sort_values("slot_dt").drop(columns=["slot_dt"])
+        st.download_button("📅 Download Today's Appointments", todays_df.to_csv(index=False), file_name="todays_appointments.csv")
+
         st.subheader("Reschedule a Student Appointment")
         if not bookings_df.empty:
             options = [f"{row['name']} ({row['email']}) - {row['slot']}" for _, row in bookings_df.iterrows()]
@@ -260,4 +268,3 @@ elif selected_tab == "Availability Settings":
             st.success("Availability updated successfully!")
     elif availability_passcode:
           st.error("Incorrect passcode.")
-
