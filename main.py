@@ -177,12 +177,11 @@ if name and email and student_id:
         if st.button("Confirm"):
             if dsps and " and " in st.session_state["selected_slot"]:
                 for s in double_blocks[st.session_state["selected_slot"]]:
-                                                new_booking = pd.DataFrame([{ "name": name, "email": email, "student_id": student_id, "dsps": dsps, "slot": s }])
-                                                            bookings_df = pd.concat([bookings_df, new_booking], ignore_index=True)
-            else:
-                                new_booking = pd.DataFrame([{ "name": name, "email": email, "student_id": student_id, "dsps": dsps, "slot": st.session_state["selected_slot"] }])
-                new_booking["self_rescheduled"] = self_reschedule_flag
-                bookings_df = pd.concat([bookings_df, new_booking], ignore_index=True)
+                    new_booking = pd.DataFrame([{ "name": name, "email": email, "student_id": student_id, "dsps": dsps, "slot": s }])
+                    bookings_df = pd.concat([bookings_df, new_booking], ignore_index=True)
+        else:
+            new_booking = pd.DataFrame([{ "name": name, "email": email, "student_id": student_id, "dsps": dsps, "slot": st.session_state["selected_slot"] }])
+            bookings_df = pd.concat([bookings_df, new_booking], ignore_index=True)
             bookings_df.to_csv(BOOKINGS_FILE, index=False)
             st.success(f"Successfully booked {st.session_state['selected_slot']}!")
             st.session_state["selected_slot"] = None
