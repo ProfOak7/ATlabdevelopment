@@ -191,8 +191,8 @@ elif selected_tab == "Admin View":
             slot_lookup = {}
             for label, pair in double_blocks.items():
                 if current_booking["dsps"] and all(s not in bookings_df["slot"].values or s == current_booking["slot"] for s in pair):
-                    start_time = pair[0].rsplit(" ", 1)[-1].split("–")[0]
-                    end_time = pair[1].rsplit(" ", 1)[-1].split("–")[-1]
+                    start_time = pair[0].split(" ")[-2] + " " + pair[0].split(" ")[-1]
+                    end_time = pair[1].split(" ")[-2] + " " + pair[1].split(" ")[-1]
                     day_label = " ".join(pair[0].split(" ")[:2])
                     display_label = f"{day_label} {start_time}–{end_time}"
                     slot_display_options.append(display_label)
