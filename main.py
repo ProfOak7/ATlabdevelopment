@@ -94,8 +94,7 @@ name = st.text_input("Enter your full name:")
 email = st.text_input("Enter your official Cuesta email:")
 student_id = st.text_input("Enter your Student ID:")
 dsps = st.checkbox("I am a DSPS student")
-if st.button("Need to Reschedule?"):
-        st.info("To reschedule your appointment, please speak with the current professor in the AT Lab.")
+
 
 if email:
     if not (email.lower().endswith("@my.cuesta.edu") or email.lower().endswith("@cuesta.edu")):
@@ -112,8 +111,18 @@ if name and email and student_id:
             lambda s: datetime.strptime(s.split(" ")[1], "%m/%d/%y").isocalendar().week
         )
         if selected_week in booked_weeks.values:
-            st.warning("You’ve already booked a slot that week. Students may only sign up once per week.")
-            st.stop()
+            # Count how many times they’ve signed up this week
+            weekly_slots = bookings_df[(bookings_df["email"] == email) & (
+                bookings_df["slot"].apply(lambda s: datetime.strptime(s.split(" ")[1], "%m/%d/%y").isocalendar().week == selected_week)
+            )]
+
+            if len(weekly_slots) == 1:
+                # Allow reschedule: remove old one
+                bookings_df = bookings_df[~((bookings_df["email"] == email) & (bookings_df["slot"].isin(weekly_slots["slot"])))].copy()
+                st.info("Your previous booking for this week will be replaced with the new one.")
+            else:
+                st.warning("You’ve already booked a slot that week and rescheduled once. Further changes require help from a professor.")
+                st.stop()
 
     st.subheader("Available Time Slots")
     selected_day = st.selectbox("Choose a day:", list(slots_by_day.keys()))
