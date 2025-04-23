@@ -260,3 +260,4 @@ elif selected_tab == "Availability Settings":
             st.success("Availability updated successfully!")
     elif availability_passcode:
           st.error("Incorrect passcode.")
+
