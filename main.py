@@ -118,18 +118,20 @@ if name and email and student_id:
                 bookings_df["slot"].apply(lambda s: datetime.strptime(s.split(" ")[1], "%m/%d/%y").isocalendar().week == selected_week)
             )]
 
-            already_rescheduled = any(weekly_bookings["self_rescheduled"])
+                            already_rescheduled = any(weekly_bookings["self_rescheduled"])
 
-                        if len(weekly_bookings) == 1 and not already_rescheduled:
+                                        if len(weekly_bookings) == 1 and not already_rescheduled:
                 # Allow reschedule: remove old one
                 bookings_df = bookings_df[~((bookings_df["email"] == email) & (bookings_df["slot"].isin(weekly_bookings["slot"])))].copy()
-                                st.info("Your previous booking for this week will be replaced with the new one.")
+                                                    st.info("Your previous booking for this week will be replaced with the new one.")
+                    self_reschedule_flag = True
                 self_reschedule_flag = True
-                        elif len(weekly_bookings) == 2 and weekly_bookings.iloc[0]['dsps'] and not already_rescheduled:
+                                        elif len(weekly_bookings) == 2 and weekly_bookings.iloc[0]['dsps'] and not already_rescheduled:
                 # DSPS reschedule
                 for s in weekly_bookings["slot"]:
                     bookings_df = bookings_df[~((bookings_df["email"] == email) & (bookings_df["slot"] == s))].copy()
-                                st.info("Your DSPS booking for this week will be replaced with the new one.")
+                                                    st.info("Your DSPS booking for this week will be replaced with the new one.")
+                    self_reschedule_flag = True
                 self_reschedule_flag = True
             else:
                 st.warning("You’ve already booked and rescheduled once this week. Further changes require help from a professor.")
@@ -172,11 +174,13 @@ if name and email and student_id:
         if st.button("Confirm"):
             if dsps and " and " in st.session_state["selected_slot"]:
                 for s in double_blocks[st.session_state["selected_slot"]]:
-                    new_booking = pd.DataFrame([{ "name": name, "email": email, "student_id": student_id, "dsps": dsps, "slot": s }])
+                                                new_booking = pd.DataFrame([{ "name": name, "email": email, "student_id": student_id, "dsps": dsps, "slot": s }])
+                            new_booking["self_rescheduled"] = self_reschedule_flag
                                         new_booking["self_rescheduled"] = self_reschedule_flag
                     bookings_df = pd.concat([bookings_df, new_booking], ignore_index=True)
             else:
-                new_booking = pd.DataFrame([{ "name": name, "email": email, "student_id": student_id, "dsps": dsps, "slot": st.session_state["selected_slot"] }])
+                                new_booking = pd.DataFrame([{ "name": name, "email": email, "student_id": student_id, "dsps": dsps, "slot": st.session_state["selected_slot"] }])
+                new_booking["self_rescheduled"] = self_reschedule_flag
                 bookings_df = pd.concat([bookings_df, new_booking], ignore_index=True)
             bookings_df.to_csv(BOOKINGS_FILE, index=False)
             st.success(f"Successfully booked {st.session_state['selected_slot']}!")
