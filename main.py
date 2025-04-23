@@ -23,7 +23,7 @@ else:
 
 # Generate next week's Mon–Fri with 15-min slots
 today = datetime.today()
-days = [today + timedelta(days=i) for i in range(14) if (today + timedelta(days=i)).weekday() < 5]
+days = [today + timedelta(days=i) for i in range(21) if (today + timedelta(days=i)).weekday() < 5]
 
 single_slots = []
 slots_by_day = {}
