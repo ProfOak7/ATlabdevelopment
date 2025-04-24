@@ -291,15 +291,6 @@ elif selected_tab == "Availability Settings":
                         st.session_state[f"avail_{slot}"] = False
 
                 # Apply weekday logic moved outside
-            weekday_label = day.split()[0]
-            if st.button(f"Apply to All {weekday_label}s", key=f"apply_all_{weekday_label}_{day}"):
-                copied_state = [slot for slot in slots if st.session_state.get(f"avail_{slot}")]
-                for other_day, other_slots in slots_by_day.items():
-                    if other_day.startswith(weekday_label) and other_day != day:
-                        for slot in other_slots:
-                            st.session_state[f"avail_{slot}"] = slot in copied_state
-
-                # Add Apply to All [Weekday]s
                 weekday_label = day.split()[0]
                 if st.button(f"Apply to All {weekday_label}s", key=f"apply_all_{weekday_label}_{day}"):
                     copied_state = [slot for slot in slots if st.session_state.get(f"avail_{slot}")]
@@ -307,8 +298,8 @@ elif selected_tab == "Availability Settings":
                         if other_day.startswith(weekday_label) and other_day != day:
                             for slot in other_slots:
                                 st.session_state[f"avail_{slot}"] = slot in copied_state
-                    for slot in slots:
-                        st.session_state[f"avail_{slot}"] = False
+
+                
                 selected_by_day[day] = []
                 for slot in slots:
                     is_selected = availability_df.loc[availability_df["slot"] == slot, "available"].values[0] if slot in availability_df["slot"].values else False
