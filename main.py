@@ -24,14 +24,14 @@ else:
 
 # Generate next week's Mon–Fri with 15-min slots
 today = datetime.today()
-days = [today + timedelta(days=i) for i in range(21) if (today + timedelta(days=i)).weekday() < 5]
+days = [today + timedelta(days=i) for i in range(21) if (today + timedelta(days=i)).weekday() < 6]
 
 single_slots = []
 slots_by_day = {}
 
 for day in days:
-    current_time = datetime.combine(day.date(), datetime.strptime("09:00", "%H:%M").time())
-    end_time = datetime.combine(day.date(), datetime.strptime("17:00", "%H:%M").time())
+    current_time = datetime.combine(day.date(), datetime.strptime("08:00", "%H:%M").time())
+    end_time = datetime.combine(day.date(), datetime.strptime("22:00", "%H:%M").time())
     label_day = day.strftime('%A %m/%d/%y')
     slots_by_day[label_day] = []
     while current_time < end_time:
