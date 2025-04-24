@@ -279,7 +279,7 @@ elif selected_tab == "Availability Settings":
         else:
             availability_df = pd.DataFrame({"slot": single_slots, "available": [True]*len(single_slots)})
 
-                selected_by_day = {}
+        selected_by_day = {}
         for day, slots in slots_by_day.items():
             with st.expander(f"{day}"):
                 selected_by_day[day] = []
