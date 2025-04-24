@@ -279,13 +279,14 @@ elif selected_tab == "Availability Settings":
         else:
             availability_df = pd.DataFrame({"slot": single_slots, "available": [True]*len(single_slots)})
 
-        selected_by_day = {}
+                selected_by_day = {}
         for day, slots in slots_by_day.items():
             with st.expander(f"{day}"):
                 selected_by_day[day] = []
                 for slot in slots:
                     is_selected = availability_df.loc[availability_df["slot"] == slot, "available"].values[0] if slot in availability_df["slot"].values else False
-                    checked = st.checkbox(slot.split(" ")[-2] + " " + slot.split(" ")[-1], value=is_selected, key=slot)
+                    time_display = slot.split(" ")[-2] + " " + slot.split(" ")[-1]
+                    checked = st.checkbox(time_display, value=is_selected, key=f"avail_{slot}")
                     if checked:
                         selected_by_day[day].append(slot)
 
