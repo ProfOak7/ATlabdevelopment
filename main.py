@@ -264,7 +264,7 @@ elif selected_tab == "Admin View":
         st.error("Incorrect passcode.")
 
 # Availability Settings
-elif selected_tab == "Availability Settings":
+elif selected_tab == \"Availability Settings\":
     st.markdown("---")
     with st.expander("🔒 Availability Admin Access"):
         availability_passcode = st.text_input("Enter availability admin passcode:", type="password")
@@ -280,6 +280,7 @@ elif selected_tab == "Availability Settings":
             availability_df = pd.DataFrame({"slot": single_slots, "available": [True]*len(single_slots)})
 
         selected_by_day = {}
+
         for day, slots in slots_by_day.items():
             with st.expander(f"{day}"):
                 if st.button(f"Select All {day}", key=f"select_all_{day}"):
@@ -290,33 +291,27 @@ elif selected_tab == "Availability Settings":
                     for slot in slots:
                         st.session_state[f"avail_{slot}"] = False
 
-                # Apply weekday logic moved outside
                 weekday_label = day.split()[0]
                 if st.button(f"Apply to All {weekday_label}s", key=f"apply_all_{weekday_label}_{day}"):
                     copied_slots = [slot for slot in slots if st.session_state.get(f"avail_{slot}")]
-        for other_day, other_slots in slots_by_day.items():
-          if other_day.startswith(weekday_label) and other_day != day:
-            for slot in other_slots:
-                st.session_state[f"avail_{slot}"] = slot in copied_slots
+                    for other_day, other_slots in slots_by_day.items():
+                        if other_day.startswith(weekday_label) and other_day != day:
+                            for slot in other_slots:
+                                st.session_state[f"avail_{slot}"] = slot in copied_slots
 
                 selected_by_day[day] = []
                 for slot in slots:
                     is_selected = availability_df.loc[availability_df["slot"] == slot, "available"].values[0] if slot in availability_df["slot"].values else False
-                    time_display = slot.split(" ")[-2] + " " + slot.split(" ")[-1]
-                    checked = st.checkbox(time_display, value=is_selected, key=f"avail_{slot}")
+                    checked = st.checkbox(slot.split(" ")[-2] + " " + slot.split(" ")[-1], value=st.session_state.get(f"avail_{slot}", is_selected), key=f"avail_{slot}")
                     if checked:
                         selected_by_day[day].append(slot)
 
-                
-
-        
-
         selected_available = [slot for slots in selected_by_day.values() for slot in slots]
-
         availability_df["available"] = availability_df["slot"].isin(selected_available)
 
         if st.button("Save Availability"):
             availability_df.to_csv(available_file, index=False)
             st.success("Availability updated successfully!")
     elif availability_passcode:
+        st.error("Incorrect passcode.")
           st.error("Incorrect passcode.")
