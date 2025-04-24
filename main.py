@@ -287,7 +287,8 @@ elif selected_tab == "Availability Settings":
                         st.session_state[f"avail_{slot}"] = True
 
                 if st.button(f"Deselect All {day}", key=f"deselect_all_{day}"):
-                    
+                    for slot in slots:
+                        st.session_state[f"avail_{slot}"] = False
 
                 # Add Apply to All [Weekday]s
                 weekday_label = day.split()[0]
