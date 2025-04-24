@@ -293,9 +293,9 @@ elif selected_tab == "Availability Settings":
                 # Apply weekday logic moved outside
                 weekday_label = day.split()[0]
                 if st.button(f"Apply to All {weekday_label}s", key=f"apply_all_{weekday_label}_{day}"):
-    st.session_state["copy_day"] = day
-    st.session_state["apply_weekday_trigger"] = True
-    st.rerun()
+                  st.session_state["copy_day"] = day
+                  st.session_state["apply_weekday_trigger"] = True
+                  st.rerun()
 
                 selected_by_day[day] = []
                 for slot in slots:
