@@ -116,8 +116,8 @@ if name and email and student_id:
                 bookings_df["slot"].apply(lambda s: datetime.strptime(s.split(" ")[1], "%m/%d/%y").isocalendar().week == selected_week)
             )]
 
-            # Prevent rescheduling on the same day
-                        today_str = datetime.today().strftime("%m/%d/%y")
+                        # Prevent rescheduling on the same day
+            today_str = datetime.today().strftime("%m/%d/%y")
             today_bookings = [b for b in weekly_bookings["slot"] if b.split(" ")[1] == today_str]
             if today_bookings:
                 st.warning("You cannot reschedule an appointment on the same day. Please speak with a professor if needed.")
