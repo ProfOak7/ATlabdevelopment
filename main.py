@@ -117,9 +117,9 @@ if name and email and student_id:
             )]
 
             # Prevent rescheduling on the same day
-            today_str = datetime.today().strftime("%m/%d/%y")
-            booking_dates = [b.split(" ")[1] for b in weekly_bookings["slot"]]
-            if today_str in booking_dates:
+                        today_str = datetime.today().strftime("%m/%d/%y")
+            today_bookings = [b for b in weekly_bookings["slot"] if b.split(" ")[1] == today_str]
+            if today_bookings:
                 st.warning("You cannot reschedule an appointment on the same day. Please speak with a professor if needed.")
                 st.stop()
 
@@ -279,12 +279,17 @@ elif selected_tab == "Availability Settings":
         else:
             availability_df = pd.DataFrame({"slot": single_slots, "available": [True]*len(single_slots)})
 
-        selected_available = st.multiselect(
-            "Select available time slots:",
-            options=single_slots,
-            default=availability_df[availability_df["available"]]["slot"].tolist(),
-            key="availability_selector"
-        )
+        selected_by_day = {}
+        for day, slots in slots_by_day.items():
+            with st.expander(f"{day}"):
+                selected_by_day[day] = []
+                for slot in slots:
+                    is_selected = availability_df.loc[availability_df["slot"] == slot, "available"].values[0] if slot in availability_df["slot"].values else False
+                    checked = st.checkbox(slot.split(" ")[-2] + " " + slot.split(" ")[-1], value=is_selected, key=slot)
+                    if checked:
+                        selected_by_day[day].append(slot)
+
+        selected_available = [slot for slots in selected_by_day.values() for slot in slots]
 
         availability_df["available"] = availability_df["slot"].isin(selected_available)
 
