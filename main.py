@@ -282,6 +282,13 @@ elif selected_tab == "Availability Settings":
         selected_by_day = {}
         for day, slots in slots_by_day.items():
             with st.expander(f"{day}"):
+                if st.button(f"Select All {day}", key=f"select_all_{day}"):
+                    for slot in slots:
+                        st.session_state[f"avail_{slot}"] = True
+
+                if st.button(f"Deselect All {day}", key=f"deselect_all_{day}"):
+                    for slot in slots:
+                        st.session_state[f"avail_{slot}"] = False
                 selected_by_day[day] = []
                 for slot in slots:
                     is_selected = availability_df.loc[availability_df["slot"] == slot, "available"].values[0] if slot in availability_df["slot"].values else False
