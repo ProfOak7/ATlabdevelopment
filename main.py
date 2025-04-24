@@ -264,7 +264,7 @@ elif selected_tab == "Admin View":
         st.error("Incorrect passcode.")
 
 # Availability Settings
-elif selected_tab == \"Availability Settings\":
+elif selected_tab == "Availability Settings":
     st.markdown("---")
     with st.expander("🔒 Availability Admin Access"):
         availability_passcode = st.text_input("Enter availability admin passcode:", type="password")
@@ -314,4 +314,3 @@ elif selected_tab == \"Availability Settings\":
             st.success("Availability updated successfully!")
     elif availability_passcode:
         st.error("Incorrect passcode.")
-          st.error("Incorrect passcode.")
