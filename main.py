@@ -293,13 +293,10 @@ elif selected_tab == "Availability Settings":
                 # Apply weekday logic moved outside
                 weekday_label = day.split()[0]
                 if st.button(f"Apply to All {weekday_label}s", key=f"apply_all_{weekday_label}_{day}"):
-                    copied_state = [slot for slot in slots if st.session_state.get(f"avail_{slot}")]
-                    for other_day, other_slots in slots_by_day.items():
-                        if other_day.startswith(weekday_label) and other_day != day:
-                            for slot in other_slots:
-                                st.session_state[f"avail_{slot}"] = slot in copied_state
+                    st.session_state["apply_to_all_trigger"] = True
+                    st.session_state["copy_day"] = day
+                    st.rerun()
 
-                
                 selected_by_day[day] = []
                 for slot in slots:
                     is_selected = availability_df.loc[availability_df["slot"] == slot, "available"].values[0] if slot in availability_df["slot"].values else False
@@ -307,6 +304,18 @@ elif selected_tab == "Availability Settings":
                     checked = st.checkbox(time_display, value=is_selected, key=f"avail_{slot}")
                     if checked:
                         selected_by_day[day].append(slot)
+
+                # Apply copied state to matching days after rerun
+        if st.session_state.get("apply_to_all_trigger") and st.session_state.get("copy_day"):
+            copy_day = st.session_state["copy_day"]
+            weekday_label = copy_day.split()[0]
+            copied_slots = selected_by_day.get(copy_day, [])
+            for other_day, other_slots in slots_by_day.items():
+                if other_day.startswith(weekday_label) and other_day != copy_day:
+                    for slot in other_slots:
+                        st.session_state[f"avail_{slot}"] = slot in copied_slots
+            st.session_state["apply_to_all_trigger"] = False
+            st.session_state["copy_day"] = None
 
         selected_available = [slot for slots in selected_by_day.values() for slot in slots]
 
