@@ -193,9 +193,9 @@ if name and email and student_id:
         st.session_state["selected_slot"] = None
         st.session_state["confirming"] = False
         st.rerun()
-            st.session_state["selected_slot"] = None
-            st.session_state["confirming"] = False
-            st.rerun()
+        st.session_state["selected_slot"] = None
+        st.session_state["confirming"] = False
+        st.rerun()
 
 
 # Admin View
