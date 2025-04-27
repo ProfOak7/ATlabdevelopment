@@ -172,22 +172,26 @@ if name and email and student_id:
             st.info("No available slots for this day.")
 
     if st.session_state["confirming"] and st.session_state["selected_slot"]:
-        st.subheader("Confirm Your Appointment")
-        st.write(f"You have selected: **{st.session_state['selected_slot']}**")
-        if st.button("Confirm"):
-            if dsps and " and " in st.session_state["selected_slot"]:
-                for s in double_blocks[st.session_state["selected_slot"]]:
-                    new_booking = pd.DataFrame([{ "name": name, "email": email, "student_id": student_id, "dsps": dsps, "slot": s }])
-                    bookings_df = pd.concat([bookings_df, new_booking], ignore_index=True)
+    st.subheader("Confirm Your Appointment")
+    st.write(f"You have selected: **{st.session_state['selected_slot']}**")
+    if st.button("Confirm"):
+        if dsps and " and " in st.session_state["selected_slot"]:
+            for s in double_blocks[st.session_state["selected_slot"]]:
+                new_booking = pd.DataFrame([{ "name": name, "email": email, "student_id": student_id, "dsps": dsps, "slot": s }])
+                bookings_df = pd.concat([bookings_df, new_booking], ignore_index=True)
         else:
             new_booking = pd.DataFrame([{ "name": name, "email": email, "student_id": student_id, "dsps": dsps, "slot": st.session_state["selected_slot"] }])
             bookings_df = pd.concat([bookings_df, new_booking], ignore_index=True)
-            bookings_df.to_csv(BOOKINGS_FILE, index=False)
-            st.success(f"Successfully booked {st.session_state['selected_slot']}!")
-            st.session_state["selected_slot"] = None
-            st.session_state["confirming"] = False
-            st.stop()
-        if st.button("Cancel"):
+
+        bookings_df.to_csv(BOOKINGS_FILE, index=False)
+        st.success(f"Successfully booked {st.session_state['selected_slot']}!")
+        st.session_state["selected_slot"] = None
+        st.session_state["confirming"] = False
+        st.stop()
+    if st.button("Cancel"):
+        st.session_state["selected_slot"] = None
+        st.session_state["confirming"] = False
+        st.rerun()
             st.session_state["selected_slot"] = None
             st.session_state["confirming"] = False
             st.rerun()
