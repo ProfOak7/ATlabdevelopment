@@ -18,49 +18,23 @@ if "confirming" not in st.session_state:
 # Load or create bookings file
 if os.path.exists(BOOKINGS_FILE):
     bookings_df = pd.read_csv(BOOKINGS_FILE)
-    
 else:
     bookings_df = pd.DataFrame(columns=["name", "email", "student_id", "dsps", "slot"])
 
-# Generate next week's Mon–Fri with 15-min slots
-today = datetime.today()
-days = [today + timedelta(days=i) for i in range(21) if (today + timedelta(days=i)).weekday() < 6]
+# Generate next week's Mon–Sat with 15-min slots
 
-single_slots = []
-slots_by_day = {}
+# [The rest of your code would continue here... including the fixed calendar_data parser!]
 
-for day in days:
-    current_time = datetime.combine(day.date(), datetime.strptime("08:00", "%H:%M").time())
-    end_time = datetime.combine(day.date(), datetime.strptime("22:00", "%H:%M").time())
-    label_day = day.strftime('%A %m/%d/%y')
-    slots_by_day[label_day] = []
-    while current_time < end_time:
-        start_label = current_time.strftime("%-I:%M")
-        end_label = (current_time + timedelta(minutes=15)).strftime("%-I:%M %p")
-        slot_time_label = f"{start_label}–{end_label}"
-        label = f"{label_day} {slot_time_label}"
-        single_slots.append(label)
-        slots_by_day[label_day].append(label)
-        current_time += timedelta(minutes=15)
-
-double_blocks = {}
-for i in range(len(single_slots) - 1):
-    date1 = single_slots[i].split(" ")[1]
-    date2 = single_slots[i+1].split(" ")[1]
-    if date1 == date2:
-        block_label = f"{single_slots[i]} and {single_slots[i+1]}"
-        double_blocks[block_label] = [single_slots[i], single_slots[i+1]]
-
-# 📅 Calendar View of Current Sign-Ups (First Name Only)
-st.sidebar.title("Navigation")
-selected_tab = st.sidebar.radio("Go to:", ["Sign-Up", "Admin View", "Availability Settings"])
-
+# In your "Sign-Up" tab where calendar_data is processed, use:
 if selected_tab == "Sign-Up":
     st.subheader("Current Sign-Ups")
     calendar_data = bookings_df.copy()
     if not calendar_data.empty:
         now = datetime.now()
-        calendar_data["slot_dt"] = calendar_data["slot"].apply(lambda x: datetime.strptime(x.split(" ")[1], "%m/%d/%y"))
+        # 🔄 Fixed datetime parser
+        calendar_data["slot_dt"] = calendar_data["slot"].apply(
+            lambda x: datetime.strptime(f"{x.split()[1]} {x.split()[2].split('–')[0]} {x.split()[3]}", "%m/%d/%y %I:%M %p")
+        )
         calendar_data = calendar_data[calendar_data["slot_dt"].dt.date >= now.date()]
         calendar_data["first_name"] = calendar_data["name"].apply(lambda x: x.split(" ")[0] if pd.notnull(x) else "")
         calendar_data["day"] = calendar_data["slot"].apply(lambda x: " ".join(x.split(" ")[:2]))
@@ -70,15 +44,14 @@ if selected_tab == "Sign-Up":
         for day in sorted_days:
             group = grouped.get_group(day)
             with st.expander(f"{day} ({len(group)} sign-up{'s' if len(group) != 1 else ''})"):
-                # Merge DSPS double bookings into a single row
                 grouped_view = group.sort_values("slot").groupby(["first_name", "email"])
                 display_rows = []
                 for (name, _), slots in grouped_view:
                     sorted_slots = slots["slot"].tolist()
                     if len(sorted_slots) == 2:
-                        start = sorted_slots[0].rsplit(" ", 1)[-1].split("–")[0]
-                        end = sorted_slots[1].rsplit(" ", 1)[-1].split("–")[-1]
-                        label = f"{sorted_slots[0].rsplit(' ', 1)[0]} {start}–{end}"
+                        start = sorted_slots[0].rsplit(" ", 1)[-1].split("-")[0]
+                        end = sorted_slots[1].rsplit(" ", 1)[-1].split("-")[-1]
+                        label = f"{sorted_slots[0].rsplit(' ', 1)[0]} {start}-{end}"
                         display_rows.append({"Student": name, "Time Slot": label})
                     else:
                         for s in sorted_slots:
@@ -86,7 +59,6 @@ if selected_tab == "Sign-Up":
                 st.dataframe(pd.DataFrame(display_rows))
     else:
         st.info("No appointments have been scheduled yet.")
-
 
 # UI: Student Sign-In
 st.title("Student AT Appointment Sign-Up")
