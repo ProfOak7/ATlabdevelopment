@@ -9,7 +9,7 @@ st.set_page_config(page_title="Student Appointment Sign-Up", layout="wide")
 BOOKINGS_FILE = "bookings.csv"
 AVAILABLE_FILE = "available_slots.csv"
 ADMIN_PASSCODE = "cougar2025"
-AVAILABILITY_PASSCODE = "OAK"
+AVAILABILITY_PASSCODE = "atlabadmin2025"
 
 # --- Initialize Session State ---
 if "selected_slot" not in st.session_state:
@@ -59,7 +59,9 @@ if selected_tab == "Sign-Up":
     if not bookings_df.empty:
         now = datetime.now()
         calendar_data = bookings_df.copy()
-        calendar_data["slot_dt"] = calendar_data["slot"].apply(lambda x: datetime.strptime(x.split()[1], "%m/%d/%y"))
+        calendar_data["slot_dt"] = calendar_data["slot"].apply(
+            lambda x: datetime.strptime(x.split()[1], "%m/%d/%y") if pd.notnull(x) else None
+        )
         calendar_data = calendar_data[calendar_data["slot_dt"].dt.date >= now.date()]
         calendar_data["first_name"] = calendar_data["name"].apply(lambda x: x.split()[0] if pd.notnull(x) else "")
         calendar_data["day"] = calendar_data["slot"].apply(lambda x: " ".join(x.split()[:2]))
