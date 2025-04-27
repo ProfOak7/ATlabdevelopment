@@ -62,6 +62,7 @@ if selected_tab == "Sign-Up":
         calendar_data["slot_dt"] = calendar_data["slot"].apply(
             lambda x: datetime.strptime(x.split()[1], "%m/%d/%y") if pd.notnull(x) else None
         )
+        calendar_data = calendar_data[calendar_data["slot_dt"].notnull()]
         calendar_data = calendar_data[calendar_data["slot_dt"].dt.date >= now.date()]
         calendar_data["first_name"] = calendar_data["name"].apply(lambda x: x.split()[0] if pd.notnull(x) else "")
         calendar_data["day"] = calendar_data["slot"].apply(lambda x: " ".join(x.split()[:2]))
@@ -103,11 +104,9 @@ if selected_tab == "Sign-Up":
             st.error("Student ID must start with 900.")
             st.stop()
 
-        # Allow slot selection
         st.subheader("Available Time Slots")
         selected_day = st.selectbox("Choose a day:", list(slots_by_day.keys()))
 
-        # Load available slots
         if os.path.exists(AVAILABLE_FILE):
             availability_df = pd.read_csv(AVAILABLE_FILE)
             allowed_slots = availability_df[availability_df["available"]]["slot"].tolist()
@@ -135,11 +134,38 @@ if selected_tab == "Sign-Up":
             else:
                 st.info("No available slots for this day.")
 
-    # Confirm Booking
     if st.session_state.confirming and st.session_state.selected_slot:
         st.subheader("Confirm Your Appointment")
         st.write(f"You have selected: **{st.session_state.selected_slot}**")
+
         if st.button("Confirm"):
+            selected_week = datetime.strptime(
+                st.session_state.selected_slot.split(" ")[1], "%m/%d/%y"
+            ).isocalendar().week
+
+            booked_weeks = bookings_df[bookings_df["email"] == email]["slot"].apply(
+                lambda s: datetime.strptime(s.split()[1], "%m/%d/%y").isocalendar().week
+            )
+
+            if selected_week in booked_weeks.values:
+                weekly_bookings = bookings_df[
+                    (bookings_df["email"] == email) &
+                    (bookings_df["slot"].apply(lambda s: datetime.strptime(s.split()[1], "%m/%d/%y").isocalendar().week == selected_week))
+                ]
+
+                today_str = datetime.today().strftime("%m/%d/%y")
+                today_bookings = [b for b in weekly_bookings["slot"] if b.split(" ")[1] == today_str]
+
+                if today_bookings:
+                    st.warning("You cannot reschedule an appointment on the same day. Please speak with a professor if needed.")
+                    st.stop()
+
+                bookings_df = bookings_df[
+                    ~((bookings_df["email"] == email) & (bookings_df["slot"].isin(weekly_bookings["slot"])))
+                ].copy()
+
+                st.info("Your previous booking for this week will be replaced with the new one.")
+
             if dsps and " and " in st.session_state.selected_slot:
                 for s in double_blocks[st.session_state.selected_slot]:
                     new_booking = pd.DataFrame([{ "name": name, "email": email, "student_id": student_id, "dsps": dsps, "slot": s }])
@@ -158,62 +184,3 @@ if selected_tab == "Sign-Up":
             st.session_state.selected_slot = None
             st.session_state.confirming = False
             st.rerun()
-
-# --- Admin View Tab ---
-elif selected_tab == "Admin View":
-    st.title("Admin Panel")
-    passcode_input = st.text_input("Enter admin passcode:", type="password")
-
-    if passcode_input == ADMIN_PASSCODE:
-        st.success("Access granted.")
-        st.dataframe(bookings_df)
-        st.download_button("Download All Bookings", bookings_df.to_csv(index=False), file_name="bookings.csv")
-
-        st.subheader("Download Today's Appointments")
-        today_str = datetime.today().strftime("%m/%d/%y")
-        todays_df = bookings_df[bookings_df["slot"].str.contains(today_str)].copy()
-        todays_df["slot_dt"] = todays_df["slot"].apply(lambda x: datetime.strptime(f"{x.split()[1]} {x.split()[2].split('–')[0]} {x.split()[3]}", "%m/%d/%y %I:%M %p"))
-        todays_df = todays_df.sort_values("slot_dt").drop(columns="slot_dt")
-        st.download_button("Download Today's Appointments", todays_df.to_csv(index=False), file_name="todays_appointments.csv")
-
-    elif passcode_input:
-        st.error("Incorrect passcode.")
-
-# --- Availability Settings Tab ---
-elif selected_tab == "Availability Settings":
-    st.title("Availability Settings")
-    availability_passcode = st.text_input("Enter availability admin passcode:", type="password")
-
-    if availability_passcode == AVAILABILITY_PASSCODE:
-        st.success("Access granted to Availability Settings.")
-
-        if os.path.exists(AVAILABLE_FILE):
-            availability_df = pd.read_csv(AVAILABLE_FILE)
-        else:
-            availability_df = pd.DataFrame({"slot": single_slots, "available": [True]*len(single_slots)})
-
-        selected_by_day = {}
-        for day, slots in slots_by_day.items():
-            with st.expander(day):
-                if st.button(f"Select All {day}", key=f"select_all_{day}"):
-                    for slot in slots:
-                        st.session_state[f"avail_{slot}"] = True
-                if st.button(f"Deselect All {day}", key=f"deselect_all_{day}"):
-                    for slot in slots:
-                        st.session_state[f"avail_{slot}"] = False
-
-                selected_by_day[day] = []
-                for slot in slots:
-                    is_selected = availability_df.loc[availability_df["slot"] == slot, "available"].values[0] if slot in availability_df["slot"].values else False
-                    checked = st.checkbox(slot.split()[-2] + " " + slot.split()[-1], value=st.session_state.get(f"avail_{slot}", is_selected), key=f"avail_{slot}")
-                    if checked:
-                        selected_by_day[day].append(slot)
-
-        selected_available = [slot for slots in selected_by_day.values() for slot in slots]
-        availability_df["available"] = availability_df["slot"].isin(selected_available)
-
-        if st.button("Save Availability"):
-            availability_df.to_csv(AVAILABLE_FILE, index=False)
-            st.success("Availability updated successfully!")
-    elif availability_passcode:
-        st.error("Incorrect passcode.")
