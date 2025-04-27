@@ -104,6 +104,22 @@ if selected_tab == "Sign-Up":
             st.error("Student ID must start with 900.")
             st.stop()
 
+        # Show existing booking if any
+        existing_booking = bookings_df[
+            (bookings_df["email"] == email) &
+            (bookings_df["slot"].apply(lambda s: datetime.strptime(s.split()[1], "%m/%d/%y").date() >= datetime.today().date()))
+        ]
+
+        if not existing_booking.empty:
+            slots = existing_booking["slot"].sort_values().tolist()
+            if len(slots) == 2:
+                start = slots[0].rsplit(" ", 1)[-1].split("–")[0]
+                end = slots[1].rsplit(" ", 1)[-1].split("–")[-1]
+                day = slots[0].split()[0] + " " + slots[0].split()[1]
+                st.info(f"You already have an appointment scheduled for **{day} {start}–{end}**.")
+            else:
+                st.info(f"You already have an appointment scheduled for **{slots[0]}**.")
+
         st.subheader("Available Time Slots")
         selected_day = st.selectbox("Choose a day:", list(slots_by_day.keys()))
 
