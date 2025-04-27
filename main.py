@@ -172,8 +172,8 @@ if name and email and student_id:
             st.info("No available slots for this day.")
 
     if st.session_state["confirming"] and st.session_state["selected_slot"]:
-    st.subheader("Confirm Your Appointment")
-    st.write(f"You have selected: **{st.session_state['selected_slot']}**")
+       st.subheader("Confirm Your Appointment")
+       st.write(f"You have selected: **{st.session_state['selected_slot']}**")
     if st.button("Confirm"):
         if dsps and " and " in st.session_state["selected_slot"]:
             for s in double_blocks[st.session_state["selected_slot"]]:
