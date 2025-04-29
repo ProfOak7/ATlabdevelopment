@@ -177,7 +177,7 @@ if selected_tab == "Sign-Up":
     st.session_state.confirming = False
     st.stop()
 
-if st.button("Cancel"):
+        if st.button("Cancel"):
             st.session_state.selected_slot = None
             st.session_state.confirming = False
             st.rerun()
