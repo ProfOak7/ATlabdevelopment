@@ -104,6 +104,7 @@ if selected_tab == "Sign-Up":
     else:
         st.info("No appointments scheduled yet.")
 
+    # Sign-Up Form
     name = st.text_input("Enter your full name:")
     email = st.text_input("Enter your official Cuesta email:")
     student_id = st.text_input("Enter your Student ID:")
@@ -196,6 +197,7 @@ elif selected_tab == "Admin View":
     if passcode_input == ADMIN_PASSCODE:
         st.success("Access granted.")
 
+        # Separate bookings by lab location
         slo_bookings = bookings_df[bookings_df["lab_location"] == "SLO AT Lab"]
         ncc_bookings = bookings_df[bookings_df["lab_location"] == "NCC AT Lab"]
 
@@ -243,3 +245,5 @@ elif selected_tab == "Admin View":
                 st.success(f"Successfully rescheduled to {new_slot}!")
     elif passcode_input:
         st.error("Incorrect passcode.")
+
+# --- Availability Settings Tab ---
