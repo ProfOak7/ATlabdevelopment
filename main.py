@@ -104,7 +104,6 @@ if selected_tab == "Sign-Up":
     else:
         st.info("No appointments scheduled yet.")
 
-    # Sign-Up Form
     name = st.text_input("Enter your full name:")
     email = st.text_input("Enter your official Cuesta email:")
     student_id = st.text_input("Enter your Student ID:")
@@ -153,7 +152,14 @@ if selected_tab == "Sign-Up":
         st.write(f"You have selected: **{st.session_state.selected_slot}**")
 
         if st.button("Confirm"):
-            selected_week = datetime.strptime(st.session_state.selected_slot.split(" ")[1], "%m/%d/%y").isocalendar().week
+            selected_date = datetime.strptime(st.session_state.selected_slot.split(" ")[1], "%m/%d/%y").date()
+            today_date = datetime.today().date()
+
+            if selected_date == today_date:
+                st.error("You cannot reschedule same day appointments. Please inquire with the current AT Lab professor.")
+                st.stop()
+
+            selected_week = selected_date.isocalendar().week
             booked_weeks = bookings_df[bookings_df["email"] == email]["slot"].apply(
                 lambda s: datetime.strptime(s.split(" ")[1], "%m/%d/%y").isocalendar().week
             )
@@ -181,3 +187,59 @@ if selected_tab == "Sign-Up":
             st.session_state.selected_slot = None
             st.session_state.confirming = False
             st.rerun()
+
+# --- Admin View Tab ---
+elif selected_tab == "Admin View":
+    st.title("Admin Panel")
+    passcode_input = st.text_input("Enter admin passcode:", type="password")
+
+    if passcode_input == ADMIN_PASSCODE:
+        st.success("Access granted.")
+
+        slo_bookings = bookings_df[bookings_df["lab_location"] == "SLO AT Lab"]
+        ncc_bookings = bookings_df[bookings_df["lab_location"] == "NCC AT Lab"]
+
+        st.subheader("SLO AT Lab Bookings")
+        st.dataframe(slo_bookings)
+        st.download_button("Download All SLO Bookings", slo_bookings.to_csv(index=False), file_name="slo_bookings.csv")
+
+        st.subheader("NCC AT Lab Bookings")
+        st.dataframe(ncc_bookings)
+        st.download_button("Download All NCC Bookings", ncc_bookings.to_csv(index=False), file_name="ncc_bookings.csv")
+
+        st.subheader("Download Today's Appointments")
+        today_str = datetime.today().strftime("%m/%d/%y")
+
+        todays_slo = slo_bookings[slo_bookings["slot"].str.contains(today_str)].copy()
+        if not todays_slo.empty:
+            todays_slo["slot_dt"] = todays_slo["slot"].apply(lambda x: datetime.strptime(f"{x.split()[1]} {x.split()[2].split('–')[0]} {x.split()[3]}", "%m/%d/%y %I:%M %p"))
+            todays_slo = todays_slo.sort_values("slot_dt").drop(columns="slot_dt")
+            st.download_button("Download Today's SLO Appointments", todays_slo.to_csv(index=False), file_name="todays_slo_appointments.csv")
+        else:
+            st.info("No SLO appointments scheduled for today.")
+
+        todays_ncc = ncc_bookings[ncc_bookings["slot"].str.contains(today_str)].copy()
+        if not todays_ncc.empty:
+            todays_ncc["slot_dt"] = todays_ncc["slot"].apply(lambda x: datetime.strptime(f"{x.split()[1]} {x.split()[2].split('–')[0]} {x.split()[3]}", "%m/%d/%y %I:%M %p"))
+            todays_ncc = todays_ncc.sort_values("slot_dt").drop(columns="slot_dt")
+            st.download_button("Download Today's NCC Appointments", todays_ncc.to_csv(index=False), file_name="todays_ncc_appointments.csv")
+        else:
+            st.info("No NCC appointments scheduled for today.")
+
+        st.subheader("Reschedule a Student Appointment")
+        if not bookings_df.empty:
+            options = [f"{row['name']} ({row['email']}) - {row['slot']}" for _, row in bookings_df.iterrows()]
+            selected = st.selectbox("Select a booking to reschedule", options)
+            index = options.index(selected)
+            current_booking = bookings_df.iloc[index]
+
+            all_available_slots = [s for s in all_single_slots if s not in bookings_df["slot"].values or s == current_booking["slot"]]
+
+            new_slot = st.selectbox("Choose a new time slot", all_available_slots)
+
+            if st.button("Reschedule"):
+                bookings_df.at[index, "slot"] = new_slot
+                bookings_df.to_csv(BOOKINGS_FILE, index=False)
+                st.success(f"Successfully rescheduled to {new_slot}!")
+    elif passcode_input:
+        st.error("Incorrect passcode.")
