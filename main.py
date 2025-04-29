@@ -221,6 +221,57 @@ elif selected_tab == "Admin View":
         else:
             st.info("No appointments scheduled for today.")
 
+        st.subheader("Reschedule a Student Appointment")
+        if not bookings_df.empty:
+            options = [f"{row['name']} ({row['email']}) - {row['slot']}" for _, row in bookings_df.iterrows()]
+            selected = st.selectbox("Select a booking to reschedule", options)
+            index = options.index(selected)
+            current_booking = bookings_df.iloc[index]
+
+            all_available_slots = [s for s in single_slots if s not in bookings_df["slot"].values or s == current_booking["slot"]]
+
+            slot_display_options = []
+            slot_lookup = {}
+            for label, pair in double_blocks.items():
+                if current_booking["dsps"] and all(s not in bookings_df["slot"].values or s == current_booking["slot"] for s in pair):
+                    start_time = pair[0].split(" ")[-2] + " " + pair[0].split(" ")[-1]
+                    end_time = pair[1].split(" ")[-2] + " " + pair[1].split(" ")[-1]
+                    day_label = " ".join(pair[0].split(" ")[:2])
+                    display_label = f"{day_label} {start_time}–{end_time}"
+                    slot_display_options.append(display_label)
+                    slot_lookup[display_label] = pair[0]
+
+            if current_booking["dsps"] and slot_display_options:
+                new_display_label = st.selectbox("Choose a new 30-minute block", slot_display_options)
+                new_slot = slot_lookup[new_display_label]
+            else:
+                new_slot = st.selectbox("Choose a new time slot", all_available_slots)
+
+            if st.button("Reschedule"):
+                if current_booking["dsps"]:
+                    old_email = current_booking["email"]
+                    old_student_id = current_booking["student_id"]
+                    old_name = current_booking["name"]
+                    bookings_df = bookings_df[~((bookings_df["email"] == old_email) & (bookings_df["student_id"] == old_student_id))]
+                    for label, pair in double_blocks.items():
+                        if new_slot in pair:
+                            for s in pair:
+                                new_booking = pd.DataFrame([{
+                                    "name": old_name,
+                                    "email": old_email,
+                                    "student_id": old_student_id,
+                                    "dsps": True,
+                                    "slot": s
+                                }])
+                                bookings_df = pd.concat([bookings_df, new_booking], ignore_index=True)
+                            st.success(f"Successfully rescheduled to {pair[0]} and {pair[1]}!")
+                            break
+                else:
+                    bookings_df.at[index, "slot"] = new_slot
+                    st.success(f"Successfully rescheduled to {new_slot}!")
+
+                bookings_df.to_csv(BOOKINGS_FILE, index=False)
+
     elif passcode_input:
         st.error("Incorrect passcode.")
 
@@ -262,4 +313,3 @@ elif selected_tab == "Availability Settings":
             st.success("Availability updated successfully!")
     elif availability_passcode:
         st.error("Incorrect passcode.")
-
