@@ -59,7 +59,7 @@ for day in days:
         current_time = datetime.combine(day.date(), datetime.strptime(start_str, "%H:%M").time())
         end_time = datetime.combine(day.date(), datetime.strptime(end_str, "%H:%M").time())
         while current_time < end_time:
-            slot = f"{label_day} {current_time.strftime('%-I:%M')}–{(current_time + timedelta(minutes=15)).strftime('%-I:%M %p')}"
+            slot = f"{label_day} {current_time.strftime('%-I:%M')}\u2013{(current_time + timedelta(minutes=15)).strftime('%-I:%M %p')}"
             slo_slots_by_day.setdefault(label_day, []).append(slot)
             slo_single_slots.append(slot)
             current_time += timedelta(minutes=15)
@@ -69,7 +69,7 @@ for day in days:
         current_time = datetime.combine(day.date(), datetime.strptime(start_str, "%H:%M").time())
         end_time = datetime.combine(day.date(), datetime.strptime(end_str, "%H:%M").time())
         while current_time < end_time:
-            slot = f"{label_day} {current_time.strftime('%-I:%M')}–{(current_time + timedelta(minutes=15)).strftime('%-I:%M %p')}"
+            slot = f"{label_day} {current_time.strftime('%-I:%M')}\u2013{(current_time + timedelta(minutes=15)).strftime('%-I:%M %p')}"
             ncc_slots_by_day.setdefault(label_day, []).append(slot)
             ncc_single_slots.append(slot)
             current_time += timedelta(minutes=15)
@@ -153,14 +153,7 @@ if selected_tab == "Sign-Up":
         st.write(f"You have selected: **{st.session_state.selected_slot}**")
 
         if st.button("Confirm"):
-            selected_date = datetime.strptime(st.session_state.selected_slot.split(" ")[1], "%m/%d/%y").date()
-            today_date = datetime.today().date()
-
-            if selected_date == today_date:
-                st.error("You cannot reschedule same day appointments. Please inquire with the current AT Lab professor.")
-                st.stop()
-
-            selected_week = selected_date.isocalendar().week
+            selected_week = datetime.strptime(st.session_state.selected_slot.split(" ")[1], "%m/%d/%y").isocalendar().week
             booked_weeks = bookings_df[bookings_df["email"] == email]["slot"].apply(
                 lambda s: datetime.strptime(s.split(" ")[1], "%m/%d/%y").isocalendar().week
             )
@@ -246,4 +239,22 @@ elif selected_tab == "Admin View":
     elif passcode_input:
         st.error("Incorrect passcode.")
 
+
 # --- Availability Settings Tab ---
+elif selected_tab == "Availability Settings":
+    st.title("Availability Settings Panel")
+    passcode_input = st.text_input("Enter availability settings passcode:", type="password")
+
+    if passcode_input == AVAILABILITY_PASSCODE:
+        st.success("Access granted.")
+
+        st.write("Coming soon: Admin tools to adjust available lab hours and time blocks dynamically.")
+
+        # Future expansion example:
+        # - View current SLO/NCC schedules
+        # - Upload new availability CSV
+        # - Enable/disable specific days
+        # - Temporarily override availability for holidays
+
+    elif passcode_input:
+        st.error("Incorrect passcode.")
