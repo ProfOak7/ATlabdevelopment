@@ -165,10 +165,24 @@ if selected_tab == "Sign-Up":
 
     if dsps and " and " in st.session_state.selected_slot:
         for s in st.session_state.selected_slot.split(" and "):
-            new_booking = pd.DataFrame([{ "name": name, "email": email, "student_id": student_id, "dsps": dsps, "slot": s, "lab_location": lab_location }])
+            new_booking = pd.DataFrame([{
+                "name": name,
+                "email": email,
+                "student_id": student_id,
+                "dsps": dsps,
+                "slot": s,
+                "lab_location": lab_location
+            }])
             bookings_df = pd.concat([bookings_df, new_booking], ignore_index=True)
     else:
-        new_booking = pd.DataFrame([{ "name": name, "email": email, "student_id": student_id, "dsps": dsps, "slot": st.session_state.selected_slot, "lab_location": lab_location }])
+        new_booking = pd.DataFrame([{
+            "name": name,
+            "email": email,
+            "student_id": student_id,
+            "dsps": dsps,
+            "slot": st.session_state.selected_slot,
+            "lab_location": lab_location
+        }])
         bookings_df = pd.concat([bookings_df, new_booking], ignore_index=True)
 
     bookings_df.to_csv(BOOKINGS_FILE, index=False)
