@@ -27,6 +27,135 @@ else:
 if "lab_location" not in bookings_df.columns:
     bookings_df["lab_location"] = "SLO AT Lab"
 
+# --- Navigation ---
+st.sidebar.title("Navigation")
+selected_tab = st.sidebar.radio("Go to:", ["Sign-Up", "Admin View", "Availability Settings"])
+
+# --- Student Sign-Up Tab ---
+if selected_tab == "Sign-Up":
+    st.title("Student AT Appointment Sign-Up")
+
+    # Select Lab Location
+    lab_location = st.selectbox("Choose your AT Lab location:", ["SLO AT Lab", "NCC AT Lab"])
+
+    # Time Slot Generation based on lab location
+    today = datetime.today()
+    days = [today + timedelta(days=i) for i in range(21)]
+
+    slo_hours = {
+        0: ("09:00", "21:00"),
+        1: ("09:00", "21:00"),
+        2: ("08:30", "21:00"),
+        3: ("08:15", "20:30"),
+        4: ("09:15", "15:00"),
+        5: ("09:15", "13:00")
+    }
+
+    ncc_hours = {
+        0: ("12:00", "16:00"),
+        1: ("08:15", "20:00"),
+        2: ("08:15", "17:00"),
+        3: ("09:15", "17:00"),
+        4: ("08:15", "15:00")
+    }
+
+    single_slots = []
+    slots_by_day = {}
+
+    for day in days:
+        weekday = day.weekday()
+        label_day = day.strftime('%A %m/%d/%y')
+        slots_by_day[label_day] = []
+
+        if lab_location == "SLO AT Lab" and weekday in slo_hours:
+            start_str, end_str = slo_hours[weekday]
+        elif lab_location == "NCC AT Lab" and weekday in ncc_hours:
+            start_str, end_str = ncc_hours[weekday]
+        else:
+            continue
+
+        current_time = datetime.combine(day.date(), datetime.strptime(start_str, "%H:%M").time())
+        end_time = datetime.combine(day.date(), datetime.strptime(end_str, "%H:%M").time())
+
+        while current_time < end_time:
+            slot = f"{label_day} {current_time.strftime('%-I:%M')}–{(current_time + timedelta(minutes=15)).strftime('%-I:%M %p')}"
+            slots_by_day[label_day].append(slot)
+            single_slots.append(slot)
+            current_time += timedelta(minutes=15)
+
+    double_blocks = {}
+    for i in range(len(single_slots) - 1):
+        if single_slots[i].split()[1] == single_slots[i+1].split()[1]:
+            double_blocks[f"{single_slots[i]} and {single_slots[i+1]}"] = [single_slots[i], single_slots[i+1]]
+
+    # Signup Form
+    name = st.text_input("Enter your full name:")
+    email = st.text_input("Enter your official Cuesta email:")
+    student_id = st.text_input("Enter your Student ID:")
+    dsps = st.checkbox("I am a DSPS student")
+
+    if email and not (email.lower().endswith("@my.cuesta.edu") or email.lower().endswith("@cuesta.edu")):
+        st.error("Please use your official Cuesta email ending in @my.cuesta.edu or @cuesta.edu")
+        st.stop()
+
+    if name and email and student_id:
+        if not student_id.startswith("900"):
+            st.error("Student ID must start with 900.")
+            st.stop()
+
+        st.subheader("Available Time Slots")
+        selected_day = st.selectbox("Choose a day:", list(slots_by_day.keys()))
+
+        available_slots = [s for s in slots_by_day[selected_day] if s not in bookings_df["slot"].values]
+
+        if dsps:
+            double_slot_options = [label for label in double_blocks if selected_day in label and all(s not in bookings_df["slot"].values for s in double_blocks[label])]
+            if double_slot_options:
+                selected_block = st.selectbox("Choose a double time block:", double_slot_options)
+                if st.button("Select This Time Block"):
+                    st.session_state.selected_slot = selected_block
+                    st.session_state.confirming = True
+                    st.rerun()
+            else:
+                st.info("No available double blocks for this day.")
+        else:
+            if available_slots:
+                selected_time = st.selectbox("Choose a time:", available_slots)
+                if st.button("Select This Time"):
+                    st.session_state.selected_slot = selected_time
+                    st.session_state.confirming = True
+                    st.rerun()
+            else:
+                st.info("No available slots for this day.")
+
+    if st.session_state.confirming and st.session_state.selected_slot:
+        st.subheader("Confirm Your Appointment")
+        st.write(f"You have selected: **{st.session_state.selected_slot}**")
+
+        if st.button("Confirm"):
+            if dsps and " and " in st.session_state.selected_slot:
+                for s in double_blocks[st.session_state.selected_slot]:
+                    new_booking = pd.DataFrame([{ 
+                        "name": name, "email": email, "student_id": student_id, "dsps": dsps, "slot": s, "lab_location": lab_location 
+                    }])
+                    bookings_df = pd.concat([bookings_df, new_booking], ignore_index=True)
+            else:
+                new_booking = pd.DataFrame([{ 
+                    "name": name, "email": email, "student_id": student_id, "dsps": dsps, "slot": st.session_state.selected_slot, "lab_location": lab_location 
+                }])
+                bookings_df = pd.concat([bookings_df, new_booking], ignore_index=True)
+
+            bookings_df.to_csv(BOOKINGS_FILE, index=False)
+            st.success(f"Successfully booked {st.session_state.selected_slot}!")
+            st.session_state.selected_slot = None
+            st.session_state.confirming = False
+            st.stop()
+
+        if st.button("Cancel"):
+            st.session_state.selected_slot = None
+            st.session_state.confirming = False
+            st.rerun()
+
 # --- Admin View Tab ---
 elif selected_tab == "Admin View":
     st.title("Admin Panel")
