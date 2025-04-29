@@ -153,9 +153,9 @@ if selected_tab == "Sign-Up":
         st.write(f"You have selected: **{st.session_state.selected_slot}**")
 
         if st.button("Confirm"):
-        selected_week = datetime.strptime(st.session_state.selected_slot.split(" ")[1], "%m/%d/%y").isocalendar().week
-        booked_weeks = bookings_df[bookings_df["email"] == email]["slot"].apply(
-            lambda s: datetime.strptime(s.split(" ")[1], "%m/%d/%y").isocalendar().week
+            selected_week = datetime.strptime(st.session_state.selected_slot.split(" ")[1], "%m/%d/%y").isocalendar().week
+            booked_weeks = bookings_df[bookings_df["email"] == email]["slot"].apply(
+                lambda s: datetime.strptime(s.split(" ")[1], "%m/%d/%y").isocalendar().week
         )
 
         if selected_week in booked_weeks.values:
