@@ -208,18 +208,37 @@ elif selected_tab == "Admin View":
 
     if passcode_input == ADMIN_PASSCODE:
         st.success("Access granted.")
-        st.dataframe(bookings_df)
-        st.download_button("Download All Bookings", bookings_df.to_csv(index=False), file_name="bookings.csv")
+
+        # Separate bookings by lab location
+        slo_bookings = bookings_df[bookings_df["lab_location"] == "SLO AT Lab"]
+        ncc_bookings = bookings_df[bookings_df["lab_location"] == "NCC AT Lab"]
+
+        st.subheader("SLO AT Lab Bookings")
+        st.dataframe(slo_bookings)
+        st.download_button("Download All SLO Bookings", slo_bookings.to_csv(index=False), file_name="slo_bookings.csv")
+
+        st.subheader("NCC AT Lab Bookings")
+        st.dataframe(ncc_bookings)
+        st.download_button("Download All NCC Bookings", ncc_bookings.to_csv(index=False), file_name="ncc_bookings.csv")
 
         st.subheader("Download Today's Appointments")
         today_str = datetime.today().strftime("%m/%d/%y")
-        todays_df = bookings_df[bookings_df["slot"].str.contains(today_str)].copy()
-        if not todays_df.empty:
-            todays_df["slot_dt"] = todays_df["slot"].apply(lambda x: datetime.strptime(f"{x.split()[1]} {x.split()[2].split('–')[0]} {x.split()[3]}", "%m/%d/%y %I:%M %p"))
-            todays_df = todays_df.sort_values("slot_dt").drop(columns="slot_dt")
-            st.download_button("Download Today's Appointments", todays_df.to_csv(index=False), file_name="todays_appointments.csv")
+
+        todays_slo = slo_bookings[slo_bookings["slot"].str.contains(today_str)].copy()
+        if not todays_slo.empty:
+            todays_slo["slot_dt"] = todays_slo["slot"].apply(lambda x: datetime.strptime(f"{x.split()[1]} {x.split()[2].split('–')[0]} {x.split()[3]}", "%m/%d/%y %I:%M %p"))
+            todays_slo = todays_slo.sort_values("slot_dt").drop(columns="slot_dt")
+            st.download_button("Download Today's SLO Appointments", todays_slo.to_csv(index=False), file_name="todays_slo_appointments.csv")
         else:
-            st.info("No appointments scheduled for today.")
+            st.info("No SLO appointments scheduled for today.")
+
+        todays_ncc = ncc_bookings[ncc_bookings["slot"].str.contains(today_str)].copy()
+        if not todays_ncc.empty:
+            todays_ncc["slot_dt"] = todays_ncc["slot"].apply(lambda x: datetime.strptime(f"{x.split()[1]} {x.split()[2].split('–')[0]} {x.split()[3]}", "%m/%d/%y %I:%M %p"))
+            todays_ncc = todays_ncc.sort_values("slot_dt").drop(columns="slot_dt")
+            st.download_button("Download Today's NCC Appointments", todays_ncc.to_csv(index=False), file_name="todays_ncc_appointments.csv")
+        else:
+            st.info("No NCC appointments scheduled for today.")
 
         st.subheader("Reschedule a Student Appointment")
         if not bookings_df.empty:
