@@ -153,6 +153,17 @@ if selected_tab == "Sign-Up":
         st.write(f"You have selected: **{st.session_state.selected_slot}**")
 
         if st.button("Confirm"):
+        selected_week = datetime.strptime(st.session_state.selected_slot.split(" ")[1], "%m/%d/%y").isocalendar().week
+        booked_weeks = bookings_df[bookings_df["email"] == email]["slot"].apply(
+            lambda s: datetime.strptime(s.split(" ")[1], "%m/%d/%y").isocalendar().week
+        )
+
+        if selected_week in booked_weeks.values:
+            st.warning("You already have a booking this week. Your previous booking will be replaced.")
+            bookings_df = bookings_df[~((bookings_df["email"] == email) & (bookings_df["slot"].apply(
+                lambda s: datetime.strptime(s.split(" ")[1], "%m/%d/%y").isocalendar().week == selected_week)))]
+
+
             if dsps and " and " in st.session_state.selected_slot:
                 for s in st.session_state.selected_slot.split(" and "):
                     new_booking = pd.DataFrame([{ "name": name, "email": email, "student_id": student_id, "dsps": dsps, "slot": s, "lab_location": lab_location }])
