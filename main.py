@@ -149,47 +149,33 @@ if selected_tab == "Sign-Up":
                 st.info("No available slots for this day.")
 
     if st.session_state.confirming and st.session_state.selected_slot:
-        st.subheader("Confirm Your Appointment")
-        st.write(f"You have selected: **{st.session_state.selected_slot}**")
+    st.subheader("Confirm Your Appointment")
+    st.write(f"You have selected: **{st.session_state.selected_slot}**")
 
-        if st.button("Confirm"):
-    selected_week = datetime.strptime(st.session_state.selected_slot.split(" ")[1], "%m/%d/%y").isocalendar().week
-    booked_weeks = bookings_df[bookings_df["email"] == email]["slot"].apply(
-        lambda s: datetime.strptime(s.split(" ")[1], "%m/%d/%y").isocalendar().week
-    )
+    if st.button("Confirm"):
+        selected_week = datetime.strptime(st.session_state.selected_slot.split(" ")[1], "%m/%d/%y").isocalendar().week
+        booked_weeks = bookings_df[bookings_df["email"] == email]["slot"].apply(
+            lambda s: datetime.strptime(s.split(" ")[1], "%m/%d/%y").isocalendar().week
+        )
 
-    if selected_week in booked_weeks.values:
-        st.warning("You already have a booking this week. Your previous booking will be replaced.")
-        bookings_df = bookings_df[~((bookings_df["email"] == email) & (bookings_df["slot"].apply(
-            lambda s: datetime.strptime(s.split(" ")[1], "%m/%d/%y").isocalendar().week == selected_week)))]
+        if selected_week in booked_weeks.values:
+            st.warning("You already have a booking this week. Your previous booking will be replaced.")
+            bookings_df = bookings_df[~((bookings_df["email"] == email) & (bookings_df["slot"].apply(
+                lambda s: datetime.strptime(s.split(" ")[1], "%m/%d/%y").isocalendar().week == selected_week)))]
 
-    if dsps and " and " in st.session_state.selected_slot:
-        for s in st.session_state.selected_slot.split(" and "):
-            new_booking = pd.DataFrame([{
-                "name": name,
-                "email": email,
-                "student_id": student_id,
-                "dsps": dsps,
-                "slot": s,
-                "lab_location": lab_location
-            }])
+        if dsps and " and " in st.session_state.selected_slot:
+            for s in st.session_state.selected_slot.split(" and "):
+                new_booking = pd.DataFrame([{ "name": name, "email": email, "student_id": student_id, "dsps": dsps, "slot": s, "lab_location": lab_location }])
+                bookings_df = pd.concat([bookings_df, new_booking], ignore_index=True)
+        else:
+            new_booking = pd.DataFrame([{ "name": name, "email": email, "student_id": student_id, "dsps": dsps, "slot": st.session_state.selected_slot, "lab_location": lab_location }])
             bookings_df = pd.concat([bookings_df, new_booking], ignore_index=True)
-    else:
-        new_booking = pd.DataFrame([{
-            "name": name,
-            "email": email,
-            "student_id": student_id,
-            "dsps": dsps,
-            "slot": st.session_state.selected_slot,
-            "lab_location": lab_location
-        }])
-        bookings_df = pd.concat([bookings_df, new_booking], ignore_index=True)
 
-    bookings_df.to_csv(BOOKINGS_FILE, index=False)
-    st.success(f"Successfully booked {st.session_state.selected_slot}!")
-    st.session_state.selected_slot = None
-    st.session_state.confirming = False
-    st.stop()
+        bookings_df.to_csv(BOOKINGS_FILE, index=False)
+        st.success(f"Successfully booked {st.session_state.selected_slot}!")
+        st.session_state.selected_slot = None
+        st.session_state.confirming = False
+        st.stop()
 
         if st.button("Cancel"):
             st.session_state.selected_slot = None
