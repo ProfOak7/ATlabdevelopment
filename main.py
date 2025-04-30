@@ -223,26 +223,26 @@ if selected_tab == "Sign-Up":
             )
 
             if selected_week in booked_weeks.values:
-                # Check if the *existing* booking is today
-                existing_booking_today = bookings_df[
-                    (bookings_df["email"] == email) &
-                    (bookings_df["slot"].apply(lambda s: datetime.strptime(s.split(" ")[1], "%m/%d/%y").date() == now.date()))
-                ]
-                # Check if the *new* slot is today
+                # Determine dates
                 new_slot_date = datetime.strptime(selected_day_str, "%m/%d/%y").date()
+                existing_bookings = bookings_df[bookings_df["email"] == email]
 
-                if not existing_booking_today.empty and (new_slot_date != now.date()):
-                    st.warning("You already have a booking today. Rescheduling to another day is not allowed on the day of your appointment.")
-                    st.stop()
-                if existing_booking_today.empty and (new_slot_date == now.date()):
-                    st.warning("You cannot reschedule a future appointment to today once the day has begun.")
-                    st.stop()
-                if not existing_booking_today.empty:
-                    st.warning("You already have a booking today. Rescheduling to another day is not allowed on the day of your appointment.")
+                # Extract existing appointment dates
+                existing_dates = existing_bookings["slot"].apply(lambda s: datetime.strptime(s.split(" ")[1], "%m/%d/%y").date())
+
+                # Check if any existing booking is today AND if the student is trying to replace it (not just add a new week)
+                has_today_booking = any(d == now.date() for d in existing_dates)
+                replacing_today_booking = has_today_booking and (new_slot_date != now.date())
+
+                if replacing_today_booking:
+                    st.warning("You already have a booking today. Rescheduling it to another day is not allowed once the day has begun.")
                     st.stop()
 
-                bookings_df = bookings_df[~((bookings_df["email"] == email) & (bookings_df["slot"].apply(
-                    lambda s: datetime.strptime(s.split(" ")[1], "%m/%d/%y").isocalendar().week == selected_week)))]
+                # Clear previous appointment only if it's in the same week (and not today)
+                bookings_df = bookings_df[~(
+                    (bookings_df["email"] == email) &
+                    (bookings_df["slot"].apply(lambda s: datetime.strptime(s.split(" ")[1], "%m/%d/%y").isocalendar().week == selected_week and datetime.strptime(s.split(" ")[1], "%m/%d/%y").date() != now.date()))
+                )]
 
             if dsps and " and " in st.session_state.selected_slot:
                 # Block rescheduling to or from today for DSPS double bookings
