@@ -229,17 +229,42 @@ elif selected_tab == "Admin View":
             index = options.index(selected)
             current_booking = bookings_df.iloc[index]
 
-            all_available_slots = [s for s in all_single_slots if s not in bookings_df["slot"].values or s == current_booking["slot"]]
+            # Group available slots by day like student view
+            slots_by_day = slo_slots_by_day if current_booking["lab_location"] == "SLO AT Lab" else ncc_slots_by_day
+            available_by_day = {
+                day: [s for s in slots if s not in bookings_df["slot"].values or s == current_booking["slot"]]
+                for day, slots in slots_by_day.items()
+            }
+            days_with_availability = [day for day in available_by_day if available_by_day[day]]
 
-            new_slot = st.selectbox("Choose a new time slot", all_available_slots)
+            selected_day = st.selectbox("Choose a new day:", days_with_availability)
+            selected_slot = st.selectbox("Choose a new time:", available_by_day[selected_day])
 
             if st.button("Reschedule"):
-                bookings_df.at[index, "slot"] = new_slot
-                bookings_df.to_csv(BOOKINGS_FILE, index=False)
-                st.success(f"Successfully rescheduled to {new_slot}!")
+                if current_booking["dsps"] and bookings_df[bookings_df["email"] == current_booking["email"]].shape[0] == 2:
+                    # Move both DSPS blocks if applicable
+                    old_slots = bookings_df[(bookings_df["email"] == current_booking["email"])]["slot"].tolist()
+                    bookings_df = bookings_df[~(bookings_df["email"] == current_booking["email"])]
+                    new_start = datetime.strptime(selected_slot.split()[1], "%m/%d/%y")
+                    first_block = selected_slot
+                    try:
+                        second_block = slots_by_day[selected_day][slots_by_day[selected_day].index(first_block) + 1]
+                        new_blocks = [first_block, second_block]
+                        for s in new_blocks:
+                            new_row = current_booking.copy()
+                            new_row["slot"] = s
+                            bookings_df = pd.concat([bookings_df, pd.DataFrame([new_row])], ignore_index=True)
+                        bookings_df.to_csv(BOOKINGS_FILE, index=False)
+                        st.success(f"Successfully rescheduled DSPS appointment to {first_block} and {second_block}!")
+                    except IndexError:
+                        st.error("Could not find a consecutive block for DSPS reschedule.")
+                else:
+                    bookings_df.at[index, "slot"] = selected_slot
+                    bookings_df.to_csv(BOOKINGS_FILE, index=False)
+                    st.success(f"Successfully rescheduled to {selected_slot}!")
+
     elif passcode_input:
         st.error("Incorrect passcode.")
-
 
 # --- Availability Settings Tab ---
 elif selected_tab == "Availability Settings":
