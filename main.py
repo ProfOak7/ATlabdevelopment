@@ -102,8 +102,8 @@ if selected_tab == "Sign-Up":
                         st.write(f"{first_name} - {slot}"))
         else:
             st.info("No appointments scheduled for this lab yet.")
-    else:
-        st.info("No appointments scheduled yet.")
+        else:
+            st.info("No appointments scheduled yet.")
 
     # Sign-Up Form
     name = st.text_input("Enter your full name:")
@@ -182,17 +182,6 @@ if selected_tab == "Sign-Up":
             st.session_state.selected_slot = None
             st.session_state.confirming = False
             st.rerun()
-
-# --- Admin View Tab ---
-elif selected_tab == "Admin View":
-    # Admin logic here
-    pass
-
-# --- Availability Settings Tab ---
-elif selected_tab == "Availability Settings":
-    # Availability settings logic here
-    pass
-
 
 # --- Admin View Tab ---
 elif selected_tab == "Admin View":
