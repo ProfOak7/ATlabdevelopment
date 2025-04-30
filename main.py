@@ -186,16 +186,29 @@ if selected_tab == "Sign-Up":
             )
 
             if selected_week in booked_weeks.values:
-                st.warning("You already have a booking this week. Your previous booking will be replaced.")
+                # Prevent rescheduling if there's already a booking on the same day
+                existing_booking_today = bookings_df[
+                    (bookings_df["email"] == email) &
+                    (bookings_df["slot"].str.contains(datetime.now(pacific).strftime("%m/%d/%y")))
+                ]
+                if not existing_booking_today.empty:
+                    st.warning("You already have a booking today. Rescheduling to another day is not allowed on the day of your appointment.")
+                    st.stop()
+
                 bookings_df = bookings_df[~((bookings_df["email"] == email) & (bookings_df["slot"].apply(
                     lambda s: datetime.strptime(s.split(" ")[1], "%m/%d/%y").isocalendar().week == selected_week)))]
 
             if dsps and " and " in st.session_state.selected_slot:
+                # Block rescheduling to or from today for DSPS double bookings
                 same_day_conflict = any(
                     selected_day_str in s for s in bookings_df[bookings_df["email"] == email]["slot"]
                 )
-                if same_day_conflict:
-                    st.warning("You already have a booking today. You cannot reschedule same-day DSPS appointments.")
+                existing_booking_today = bookings_df[
+                    (bookings_df["email"] == email) &
+                    (bookings_df["slot"].str.contains(datetime.now(pacific).strftime("%m/%d/%y")))
+                ]
+                if same_day_conflict or (not existing_booking_today.empty and selected_day_str != datetime.now(pacific).strftime("%m/%d/%y")):
+                    st.warning("You already have a booking today. Rescheduling to or from the same day is not allowed.")
                     st.stop()
                 for s in st.session_state.selected_slot.split(" and "):
                     new_booking = pd.DataFrame([{ "name": name, "email": email, "student_id": student_id, "dsps": dsps, "slot": s, "lab_location": lab_location }])
