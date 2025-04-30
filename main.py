@@ -83,19 +83,21 @@ all_single_slots = slo_single_slots + ncc_single_slots
 st.sidebar.title("Navigation")
 selected_tab = st.sidebar.radio("Go to:", ["Sign-Up", "Admin View", "Availability Settings"])
 
-def send_confirmation_email(to_email, student_name, slot):
+def send_confirmation_email(to_email, student_name, slot, location):
     sender_email = st.secrets["EMAIL_ADDRESS"]
     password = st.secrets["EMAIL_PASSWORD"]
     subject = "AT Lab Appointment Confirmation"
     body = f"""Hi {student_name},
 
-    Your appointment has been successfully booked for:
+Your appointment has been successfully booked for:
 
-    {slot}
+{slot}
 
-    See you at the AT Lab!
+Location: {location}
 
-    - Cuesta College"""
+See you at the AT Lab!
+
+- Cuesta College"""
 
     msg = MIMEText(body)
     msg["Subject"] = subject
@@ -120,9 +122,11 @@ if selected_tab == "Sign-Up":
     st.markdown("""
     **Please read before booking:**
     - You may sign up for either location (SLO or NCC) 
+    - Once booked, you will receive email confirmation.
     - You may only sign up for **one appointment per week**.
     - DSPS students may book a **double time block** if needed by clicking "I am a DSPS student".
     - You can reschedule future appointments, but you **cannot reschedule on the day** of your scheduled appointment.
+    
     """)
 
     lab_location = st.selectbox("Choose your AT Lab location:", ["SLO AT Lab", "NCC AT Lab"])
@@ -276,9 +280,9 @@ if selected_tab == "Sign-Up":
             st.success(f"Successfully booked {st.session_state.selected_slot}!")
             if selected_week in booked_weeks.values:
                 st.info("You already had an appointment this week. It has been rescheduled.")
-                send_confirmation_email(email, name, st.session_state.selected_slot + " (Rescheduled)")
+                send_confirmation_email(email, name, st.session_state.selected_slot + " (Rescheduled)", lab_location)
             else:
-                send_confirmation_email(email, name, st.session_state.selected_slot)
+                send_confirmation_email(email, name, st.session_state.selected_slot, lab_location)
             st.session_state.selected_slot = None
             st.session_state.confirming = False
             st.stop()
