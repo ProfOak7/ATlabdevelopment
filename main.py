@@ -271,11 +271,7 @@ if selected_tab == "Sign-Up":
 
             bookings_df.to_csv(BOOKINGS_FILE, index=False)
             st.success(f"Successfully booked {st.session_state.selected_slot}!")
-            if selected_week in booked_weeks.values:
-                st.info("You already had an appointment this week. It has been rescheduled.")
-                send_confirmation_email(email, name, st.session_state.selected_slot + " (Rescheduled)")
-            else:
-                send_confirmation_email(email, name, st.session_state.selected_slot)
+            send_confirmation_email(email, name, st.session_state.selected_slot)
             st.session_state.selected_slot = None
             st.session_state.confirming = False
             st.stop()
