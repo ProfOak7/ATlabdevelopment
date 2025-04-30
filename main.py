@@ -97,8 +97,9 @@ if selected_tab == "Sign-Up":
             sorted_days = sorted(grouped.groups.keys(), key=lambda d: datetime.strptime(d.split()[1], "%m/%d/%y"))
             for day in sorted_days:
                 with st.expander(f"{day} ({len(grouped.get_group(day))} sign-up{'s' if len(grouped.get_group(day)) != 1 else ''})"):
-                    names = grouped.get_group(day)["first_name"].tolist()
-                    st.write(", ".join(names))
+                    details = grouped.get_group(day)[["first_name", "slot"]].values.tolist()
+                    for first_name, slot in details:
+                        st.write(f"{first_name} - {slot}"))
         else:
             st.info("No appointments scheduled for this lab yet.")
     else:
@@ -181,6 +182,17 @@ if selected_tab == "Sign-Up":
             st.session_state.selected_slot = None
             st.session_state.confirming = False
             st.rerun()
+
+# --- Admin View Tab ---
+elif selected_tab == "Admin View":
+    # Admin logic here
+    pass
+
+# --- Availability Settings Tab ---
+elif selected_tab == "Availability Settings":
+    # Availability settings logic here
+    pass
+
 
 # --- Admin View Tab ---
 elif selected_tab == "Admin View":
