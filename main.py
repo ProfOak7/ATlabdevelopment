@@ -88,6 +88,14 @@ if selected_tab == "Sign-Up":
     st.markdown(f"### Current Pacific Time: {now.strftime('%A, %B %d, %Y %I:%M %p')}")
     st.title("Student AT Appointment Sign-Up")
 
+    st.markdown("""
+    **Please read before booking:**
+    - You may only sign up for **one appointment per week**.
+    - DSPS students may book a **double time block** if needed.
+    - You **cannot reschedule on the day** of your scheduled appointment.
+    - If you have a future appointment, you may reschedule **up until the day before**.
+    """)
+
     lab_location = st.selectbox("Choose your AT Lab location:", ["SLO AT Lab", "NCC AT Lab"])
     slots_by_day = slo_slots_by_day if lab_location == "SLO AT Lab" else ncc_slots_by_day
 
