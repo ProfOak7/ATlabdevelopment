@@ -8,8 +8,8 @@ st.set_page_config(page_title="Student Appointment Sign-Up", layout="wide")
 
 BOOKINGS_FILE = "bookings.csv"
 AVAILABLE_FILE = "available_slots.csv"
-ADMIN_PASSCODE = "cougar2025"
-AVAILABILITY_PASSCODE = "atlabadmin2025"
+ADMIN_PASSCODE = st.secrets["ADMIN_PASSCODE"]
+AVAILABILITY_PASSCODE = st.secrets["AVAILABILITY_PASSCODE"]
 
 # --- Initialize Session State ---
 if "selected_slot" not in st.session_state:
