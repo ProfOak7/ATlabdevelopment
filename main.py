@@ -265,6 +265,7 @@ if selected_tab == "Sign-Up":
                     st.stop()
 
                 bookings_df = bookings_df.drop(updated_bookings)
+                for s in st.session_state.selected_slot.split(" and "):
                     new_booking = pd.DataFrame([{ "name": name, "email": email, "student_id": student_id, "dsps": dsps, "slot": s, "lab_location": lab_location }])
                     bookings_df = pd.concat([bookings_df, new_booking], ignore_index=True)
             else:
