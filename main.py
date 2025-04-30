@@ -91,9 +91,7 @@ def send_confirmation_email(to_email, student_name, slot, location):
 
 Your appointment has been successfully booked for:
 
-{slot}
-
-Location: {location}
+{slot} @ {location}
 
 See you at the AT Lab!
 
