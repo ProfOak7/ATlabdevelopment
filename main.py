@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 from datetime import datetime, timedelta
+import pytz
 
 # --- Configuration ---
 st.set_page_config(page_title="Student Appointment Sign-Up", layout="wide")
@@ -122,11 +123,12 @@ if selected_tab == "Sign-Up":
 
         st.subheader("Available Time Slots")
         selected_day = st.selectbox("Choose a day:", list(slots_by_day.keys()))
-        now = datetime.now()
+        pacific = pytz.timezone("US/Pacific")
+        now = datetime.now(pacific)
         available_slots = [
             s for s in slots_by_day[selected_day]
             if s not in bookings_df["slot"].values and
-            datetime.strptime(f"{s.split()[1]} {s.split()[2].split('–')[0]} {s.split()[3]}", "%m/%d/%y %I:%M %p") > now
+            pacific.localize(datetime.strptime(f"{s.split()[1]} {s.split()[2].split('–')[0]} {s.split()[3]}", "%m/%d/%y %I:%M %p")) > now
         ]
 
         double_blocks = {}
