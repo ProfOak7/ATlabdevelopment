@@ -223,11 +223,20 @@ if selected_tab == "Sign-Up":
             )
 
             if selected_week in booked_weeks.values:
-                # Prevent rescheduling if there's already a booking on the same day
+                # Check if the *existing* booking is today
                 existing_booking_today = bookings_df[
-                (bookings_df["email"] == email) &
-                (bookings_df["slot"].apply(lambda s: datetime.strptime(s.split(" ")[1], "%m/%d/%y").date() == now.date()))
-            ]
+                    (bookings_df["email"] == email) &
+                    (bookings_df["slot"].apply(lambda s: datetime.strptime(s.split(" ")[1], "%m/%d/%y").date() == now.date()))
+                ]
+                # Check if the *new* slot is today
+                new_slot_date = datetime.strptime(selected_day_str, "%m/%d/%y").date()
+
+                if not existing_booking_today.empty and (new_slot_date != now.date()):
+                    st.warning("You already have a booking today. Rescheduling to another day is not allowed on the day of your appointment.")
+                    st.stop()
+                if existing_booking_today.empty and (new_slot_date == now.date()):
+                    st.warning("You cannot reschedule a future appointment to today once the day has begun.")
+                    st.stop()
                 if not existing_booking_today.empty:
                     st.warning("You already have a booking today. Rescheduling to another day is not allowed on the day of your appointment.")
                     st.stop()
