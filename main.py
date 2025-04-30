@@ -124,8 +124,7 @@ if selected_tab == "Sign-Up":
         selected_day = st.selectbox("Choose a day:", list(slots_by_day.keys()))
         available_slots = [
             s for s in slots_by_day[selected_day]
-            if s not in bookings_df["slot"].values and
-            datetime.strptime(f"{s.split()[1]} {s.split()[2].split('–')[0]} {s.split()[3]}", "%m/%d/%y %I:%M %p") > datetime.now()
+            if s not in bookings_df["slot"].values
         ]
 
         double_blocks = {}
@@ -138,11 +137,7 @@ if selected_tab == "Sign-Up":
         if dsps:
             double_slot_options = [
                 label for label in double_blocks
-                if all(
-                    s not in bookings_df["slot"].values and
-                    datetime.strptime(f"{s.split()[1]} {s.split()[2].split('–')[0]} {s.split()[3]}", "%m/%d/%y %I:%M %p") > datetime.now()
-                    for s in double_blocks[label]
-                )
+                if all(s not in bookings_df["slot"].values for s in double_blocks[label])
             ]
             if double_slot_options:
                 selected_block = st.selectbox("Choose a double time block:", double_slot_options)
@@ -168,6 +163,19 @@ if selected_tab == "Sign-Up":
 
         if st.button("Confirm"):
             selected_week = datetime.strptime(st.session_state.selected_slot.split(" ")[1], "%m/%d/%y").isocalendar().week
+            selected_day_str = st.session_state.selected_slot.split(" ")[1]
+
+            existing_booking_same_day = bookings_df[
+                (bookings_df["email"] == email) &
+                (bookings_df["slot"].str.contains(selected_day_str))
+            ]
+
+            if not existing_booking_same_day.empty:
+                st.warning("You already have a booking for this day and cannot reschedule it. Please choose a different day.")
+                st.session_state.selected_slot = None
+                st.session_state.confirming = False
+                st.stop()
+
             booked_weeks = bookings_df[bookings_df["email"] == email]["slot"].apply(
                 lambda s: datetime.strptime(s.split(" ")[1], "%m/%d/%y").isocalendar().week
             )
