@@ -3,6 +3,8 @@ import pandas as pd
 import os
 from datetime import datetime, timedelta
 import pytz
+import smtplib
+from email.mime.text import MIMEText
 
 # --- Configuration ---
 st.set_page_config(page_title="Student Appointment Sign-Up", layout="wide")
@@ -80,6 +82,33 @@ all_single_slots = slo_single_slots + ncc_single_slots
 # --- Navigation ---
 st.sidebar.title("Navigation")
 selected_tab = st.sidebar.radio("Go to:", ["Sign-Up", "Admin View", "Availability Settings"])
+
+def send_confirmation_email(to_email, student_name, slot):
+    sender_email = st.secrets["EMAIL_ADDRESS"]
+    password = st.secrets["EMAIL_PASSWORD"]
+    subject = "AT Lab Appointment Confirmation"
+    body = f"Hi {student_name},
+
+Your appointment has been successfully booked for:
+
+{slot}
+
+See you at the AT Lab!
+
+- Cuesta College"
+
+    msg = MIMEText(body)
+    msg["Subject"] = subject
+    msg["From"] = sender_email
+    msg["To"] = to_email
+
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()
+            server.login(sender_email, password)
+            server.sendmail(sender_email, to_email, msg.as_string())
+    except Exception as e:
+        st.warning(f"Email could not be sent: {e}")
 
 # --- Student Sign-Up Tab ---
 if selected_tab == "Sign-Up":
@@ -227,6 +256,7 @@ if selected_tab == "Sign-Up":
 
             bookings_df.to_csv(BOOKINGS_FILE, index=False)
             st.success(f"Successfully booked {st.session_state.selected_slot}!")
+            send_confirmation_email(email, name, st.session_state.selected_slot)
             st.session_state.selected_slot = None
             st.session_state.confirming = False
             st.stop()
