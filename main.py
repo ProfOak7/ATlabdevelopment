@@ -90,10 +90,10 @@ if selected_tab == "Sign-Up":
 
     st.markdown("""
     **Please read before booking:**
+    - You may sign up for either location (SLO or NCC) 
     - You may only sign up for **one appointment per week**.
-    - DSPS students may book a **double time block** if needed.
-    - You **cannot reschedule on the day** of your scheduled appointment.
-    - If you have a future appointment, you may reschedule **up until the day before**.
+    - DSPS students may book a **double time block** if needed by clicking "I am a DSPS student".
+    - You can reschedule future appointments, but you **cannot reschedule on the day** of your scheduled appointment.
     """)
 
     lab_location = st.selectbox("Choose your AT Lab location:", ["SLO AT Lab", "NCC AT Lab"])
