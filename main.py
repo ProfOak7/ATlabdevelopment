@@ -245,21 +245,26 @@ if selected_tab == "Sign-Up":
                 selected_week = datetime.strptime(selected_day_str, "%m/%d/%y").isocalendar().week
                 new_slot_date = datetime.strptime(selected_day_str, "%m/%d/%y").date()
                 existing_bookings = bookings_df[bookings_df["email"] == email]
-                existing_dates = existing_bookings["slot"].apply(lambda s: datetime.strptime(s.split(" ")[1], "%m/%d/%y").date())
 
-                has_today_booking = any(d == now.date() for d in existing_dates)
-                replacing_today_booking = has_today_booking and (new_slot_date != now.date())
+                block_reschedule = False
+                updated_bookings = []
 
-                if replacing_today_booking:
+                for i, row in existing_bookings.iterrows():
+                    existing_date = datetime.strptime(row["slot"].split(" ")[1], "%m/%d/%y").date()
+                    existing_week = existing_date.isocalendar().week
+
+                    if existing_date == now.date() and selected_week == existing_week and new_slot_date != now.date():
+                        block_reschedule = True
+                        break
+
+                    if existing_week == selected_week and existing_date != now.date():
+                        updated_bookings.append(i)
+
+                if block_reschedule:
                     st.warning("You already have a booking today. Rescheduling it to another day is not allowed once the day has begun.")
                     st.stop()
 
-                bookings_df = bookings_df[~(
-                    (bookings_df["email"] == email) &
-                    (bookings_df["slot"].apply(lambda s: datetime.strptime(s.split(" ")[1], "%m/%d/%y").isocalendar().week == selected_week and datetime.strptime(s.split(" ")[1], "%m/%d/%y").date() != now.date()))
-                )]
-
-                for s in st.session_state.selected_slot.split(" and "):
+                bookings_df = bookings_df.drop(updated_bookings)
                     new_booking = pd.DataFrame([{ "name": name, "email": email, "student_id": student_id, "dsps": dsps, "slot": s, "lab_location": lab_location }])
                     bookings_df = pd.concat([bookings_df, new_booking], ignore_index=True)
             else:
