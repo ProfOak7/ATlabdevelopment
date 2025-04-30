@@ -99,7 +99,7 @@ if selected_tab == "Sign-Up":
                 with st.expander(f"{day} ({len(grouped.get_group(day))} sign-up{'s' if len(grouped.get_group(day)) != 1 else ''})"):
                     details = grouped.get_group(day)[["first_name", "slot"]].values.tolist()
                     for first_name, slot in details:
-                        st.write(f"{first_name} - {slot}"))
+                        st.write(f"{first_name} - {slot}")
         else:
             st.info("No appointments scheduled for this lab yet.")
         else:
