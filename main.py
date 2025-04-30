@@ -131,6 +131,12 @@ if selected_tab == "Sign-Up":
     ) > datetime.now()
 ]
     if s not in bookings_df["slot"].values and
+    datetime.strptime(
+        f"{s.split()[1]} {s.split()[2].split('–')[0]} {s.split()[3]}",
+        "%m/%d/%y %I:%M %p"
+    ) > datetime.now()
+]
+    if s not in bookings_df["slot"].values and
     datetime.strptime(f"{s.split()[1]} {s.split()[2].split('–')[0]} {s.split()[3]}", "%m/%d/%y %I:%M %p") > datetime.now()
 ]
     if s not in bookings_df["slot"].values and
@@ -147,6 +153,13 @@ if selected_tab == "Sign-Up":
     label for label in double_blocks
     if all(
         s not in bookings_df["slot"].values and
+        datetime.strptime(
+            f"{s.split()[1]} {s.split()[2].split('–')[0]} {s.split()[3]}",
+            "%m/%d/%y %I:%M %p"
+        ) > datetime.now()
+        for s in double_blocks[label]
+    )
+].values and
         datetime.strptime(f"{s.split()[1]} {s.split()[2].split('–')[0]} {s.split()[3]}", "%m/%d/%y %I:%M %p") > datetime.now()
         for s in double_blocks[label]
     )
