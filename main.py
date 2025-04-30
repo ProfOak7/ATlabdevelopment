@@ -290,6 +290,7 @@ if selected_tab == "Sign-Up":
             st.session_state.confirming = False
             st.rerun()
 
+          
 # --- Admin View Tab ---
 elif selected_tab == "Admin View":
     st.title("Admin Panel")
@@ -373,6 +374,25 @@ elif selected_tab == "Admin View":
     elif passcode_input:
         st.error("Incorrect passcode.")
 
+    # Usage Meter
+    if passcode_input == ADMIN_PASSCODE:
+        st.subheader("Estimated App Usage")
+        st.markdown("This estimate assumes ~3 minutes of active use per student session.")
+
+        unique_users = bookings_df["email"].nunique()
+        estimated_minutes = unique_users * 3
+        estimated_hours = estimated_minutes / 60
+
+        st.info(f"Estimated monthly usage based on current signups: {estimated_hours:.1f} hours")
+
+        if estimated_hours >= 90:
+            st.warning("⚠️ Approaching Streamlit free tier limit (100 hours/month)")
+        elif estimated_hours >= 100:
+            st.error("🚫 Estimated usage exceeds free tier limit. Upgrade may be needed.")
+        else:
+            st.success("✅ Current usage is within free limits")
+
+
 # --- Availability Settings Tab ---
 elif selected_tab == "Availability Settings":
     st.title("Availability Settings Panel")
@@ -391,3 +411,5 @@ elif selected_tab == "Availability Settings":
 
     elif passcode_input:
         st.error("Incorrect passcode.")
+
+    
