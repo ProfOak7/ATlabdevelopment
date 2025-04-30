@@ -122,7 +122,7 @@ if selected_tab == "Sign-Up":
 
         st.subheader("Available Time Slots")
         selected_day = st.selectbox("Choose a day:", list(slots_by_day.keys()))
-        available_slots = [s for s in slots_by_day[selected_day] if s not in bookings_df["slot"].values]
+        available_slots = [s for s in slots_by_day[selected_day] if s not in bookings_df["slot"].values and datetime.strptime(s.split(" ")[1], "%m/%d/%y").date() >= datetime.today().date()]
 
         double_blocks = {}
         for i in range(len(slots_by_day[selected_day]) - 1):
@@ -130,7 +130,7 @@ if selected_tab == "Sign-Up":
                 double_blocks[f"{slots_by_day[selected_day][i]} and {slots_by_day[selected_day][i+1]}"] = [slots_by_day[selected_day][i], slots_by_day[selected_day][i+1]]
 
         if dsps:
-            double_slot_options = [label for label in double_blocks if all(s not in bookings_df["slot"].values for s in double_blocks[label])]
+            double_slot_options = [label for label in double_blocks if all(s not in bookings_df["slot"].values and datetime.strptime(s.split(" ")[1], "%m/%d/%y").date() >= datetime.today().date() for s in double_blocks[label])]
             if double_slot_options:
                 selected_block = st.selectbox("Choose a double time block:", double_slot_options)
                 if st.button("Select This Time Block"):
