@@ -27,7 +27,7 @@ if "lab_location" not in bookings_df.columns:
     bookings_df["lab_location"] = "SLO AT Lab"
 
 # --- Generate Slot Templates ---
-today = datetime.today()
+today = datetime.today().replace(hour=0, minute=0, second=0, microsecond=0)
 days = [today + timedelta(days=i) for i in range(21)]
 
 slo_hours = {
