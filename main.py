@@ -209,14 +209,7 @@ if selected_tab == "Sign-Up":
             selected_week = datetime.strptime(st.session_state.selected_slot.split(" ")[1], "%m/%d/%y").isocalendar().week
             selected_day_str = st.session_state.selected_slot.split(" ")[1]
 
-            existing_booking_same_day = bookings_df[
-                (bookings_df["email"] == email) &
-                (bookings_df["slot"].apply(lambda s: datetime.strptime(s.split(" ")[1], "%m/%d/%y").date() == now.date()))
-            ]
-
-            if not existing_booking_same_day.empty:
-                st.warning("You already have a booking today. You cannot reschedule same-day appointments.")
-                st.stop()
+            
 
             booked_weeks = bookings_df[bookings_df["email"] == email]["slot"].apply(
                 lambda s: datetime.strptime(s.split(" ")[1], "%m/%d/%y").isocalendar().week
@@ -271,7 +264,11 @@ if selected_tab == "Sign-Up":
 
             bookings_df.to_csv(BOOKINGS_FILE, index=False)
             st.success(f"Successfully booked {st.session_state.selected_slot}!")
-            send_confirmation_email(email, name, st.session_state.selected_slot)
+            if selected_week in booked_weeks.values:
+                st.info("You already had an appointment this week. It has been rescheduled.")
+                send_confirmation_email(email, name, st.session_state.selected_slot + " (Rescheduled)")
+            else:
+                send_confirmation_email(email, name, st.session_state.selected_slot)
             st.session_state.selected_slot = None
             st.session_state.confirming = False
             st.stop()
