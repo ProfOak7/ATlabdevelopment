@@ -85,7 +85,7 @@ selected_tab = st.sidebar.radio("Go to:", ["Sign-Up", "Admin View", "Availabilit
 if selected_tab == "Sign-Up":
     pacific = pytz.timezone("US/Pacific")
     now = datetime.now(pacific)
-    st.markdown(f"### Current Pacific Time: {now.strftime('%A, %B %d, %Y %I:%M %p')}")
+    st.markdown(f"Current Pacific Time: {now.strftime('%A, %B %d, %Y %I:%M %p')}")
     st.title("Student AT Appointment Sign-Up")
 
     st.markdown("""
