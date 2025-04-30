@@ -191,6 +191,12 @@ if selected_tab == "Sign-Up":
                     lambda s: datetime.strptime(s.split(" ")[1], "%m/%d/%y").isocalendar().week == selected_week)))]
 
             if dsps and " and " in st.session_state.selected_slot:
+                same_day_conflict = any(
+                    selected_day_str in s for s in bookings_df[bookings_df["email"] == email]["slot"]
+                )
+                if same_day_conflict:
+                    st.warning("You already have a booking today. You cannot reschedule same-day DSPS appointments.")
+                    st.stop()
                 for s in st.session_state.selected_slot.split(" and "):
                     new_booking = pd.DataFrame([{ "name": name, "email": email, "student_id": student_id, "dsps": dsps, "slot": s, "lab_location": lab_location }])
                     bookings_df = pd.concat([bookings_df, new_booking], ignore_index=True)
