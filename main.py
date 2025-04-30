@@ -102,8 +102,8 @@ if selected_tab == "Sign-Up":
                         st.write(f"{first_name} - {slot}")
         else:
             st.info("No appointments scheduled for this lab yet.")
-        else:
-            st.info("No appointments scheduled yet.")
+    else:
+        st.info("No appointments scheduled yet.")
 
     # Sign-Up Form
     name = st.text_input("Enter your full name:")
