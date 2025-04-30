@@ -87,15 +87,15 @@ def send_confirmation_email(to_email, student_name, slot):
     sender_email = st.secrets["EMAIL_ADDRESS"]
     password = st.secrets["EMAIL_PASSWORD"]
     subject = "AT Lab Appointment Confirmation"
-    body = f"Hi {student_name},
+    body = f"""Hi {student_name},
 
-Your appointment has been successfully booked for:
+    Your appointment has been successfully booked for:
 
-{slot}
+    {slot}
 
-See you at the AT Lab!
+    See you at the AT Lab!
 
-- Cuesta College"
+    - Cuesta College"""
 
     msg = MIMEText(body)
     msg["Subject"] = subject
