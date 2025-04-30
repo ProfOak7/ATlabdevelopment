@@ -175,9 +175,7 @@ if selected_tab == "Sign-Up":
             ]
 
             if not existing_booking_same_day.empty:
-                st.warning("You already have a booking for this day and cannot reschedule it. Please choose a different day.")
-                st.session_state.selected_slot = None
-                st.session_state.confirming = False
+                st.warning("You already have a booking today. You cannot reschedule same-day appointments.")
                 st.stop()
 
             booked_weeks = bookings_df[bookings_df["email"] == email]["slot"].apply(
