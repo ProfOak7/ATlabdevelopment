@@ -150,10 +150,10 @@ if selected_tab == "Sign-Up":
         st.info("No appointments scheduled yet.")
 
     # Sign-Up Form
-    name = st.text_input("Enter your full name:")
-    exam_number = st.selectbox("Which oral exam are you signing up for?", EXAM_NUMBERS)
+    name = st.text_input("Enter your full name:")  
     email = st.text_input("Enter your official Cuesta email:")
     student_id = st.text_input("Enter your Student ID:")
+    exam_number = st.selectbox("Which oral exam are you signing up for?", EXAM_NUMBERS)
     dsps = st.checkbox("I am a DSPS student")
 
     if email and not (email.lower().endswith("@my.cuesta.edu") or email.lower().endswith("@cuesta.edu")):
