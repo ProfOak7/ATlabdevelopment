@@ -24,7 +24,7 @@ if "confirming" not in st.session_state:
 if os.path.exists(BOOKINGS_FILE):
     bookings_df = pd.read_csv(BOOKINGS_FILE)
 else:
-    bookings_df = pd.DataFrame(columns=["name", "email", "student_id", "dsps", "slot"])
+    bookings_df = pd.DataFrame(columns=["name", "email", "student_id", "dsps", "slot", "lab_location", "exam_number", "grade", "graded_by"])
 
 if "lab_location" not in bookings_df.columns:
     bookings_df["lab_location"] = "SLO AT Lab"
@@ -111,6 +111,7 @@ See you at the AT Lab!
         st.warning(f"Email could not be sent: {e}")
 
 # --- Student Sign-Up Tab ---
+EXAM_NUMBERS = [str(i) for i in range(2, 11)]
 if selected_tab == "Sign-Up":
     pacific = pytz.timezone("US/Pacific")
     now = datetime.now(pacific)
@@ -150,6 +151,7 @@ if selected_tab == "Sign-Up":
 
     # Sign-Up Form
     name = st.text_input("Enter your full name:")
+    exam_number = st.selectbox("Which oral exam are you signing up for?", EXAM_NUMBERS)
     email = st.text_input("Enter your official Cuesta email:")
     student_id = st.text_input("Enter your Student ID:")
     dsps = st.checkbox("I am a DSPS student")
@@ -268,10 +270,10 @@ if selected_tab == "Sign-Up":
 
                 bookings_df = bookings_df.drop(updated_bookings)
                 for s in st.session_state.selected_slot.split(" and "):
-                    new_booking = pd.DataFrame([{ "name": name, "email": email, "student_id": student_id, "dsps": dsps, "slot": s, "lab_location": lab_location }])
+                    new_booking = pd.DataFrame([{ "name": name, "email": email, "student_id": student_id, "dsps": dsps, "slot": s, "lab_location": lab_location, "exam_number": exam_number, "grade": "", "graded_by": "" }])
                     bookings_df = pd.concat([bookings_df, new_booking], ignore_index=True)
             else:
-                new_booking = pd.DataFrame([{ "name": name, "email": email, "student_id": student_id, "dsps": dsps, "slot": st.session_state.selected_slot, "lab_location": lab_location }])
+                new_booking = pd.DataFrame([{ "name": name, "email": email, "student_id": student_id, "dsps": dsps, "slot": st.session_state.selected_slot, "lab_location": lab_location, "exam_number": exam_number, "grade": "", "graded_by": "" }])
                 bookings_df = pd.concat([bookings_df, new_booking], ignore_index=True)
 
             bookings_df.to_csv(BOOKINGS_FILE, index=False)
@@ -373,25 +375,6 @@ elif selected_tab == "Admin View":
 
     elif passcode_input:
         st.error("Incorrect passcode.")
-
-    # Usage Meter
-    if passcode_input == ADMIN_PASSCODE:
-        st.subheader("Estimated App Usage")
-        st.markdown("This estimate assumes ~3 minutes of active use per student session.")
-
-        unique_users = bookings_df["email"].nunique()
-        estimated_minutes = unique_users * 3
-        estimated_hours = estimated_minutes / 60
-
-        st.info(f"Estimated monthly usage based on current signups: {estimated_hours:.1f} hours")
-
-        if estimated_hours >= 90:
-            st.warning("⚠️ Approaching Streamlit free tier limit (100 hours/month)")
-        elif estimated_hours >= 100:
-            st.error("🚫 Estimated usage exceeds free tier limit. Upgrade may be needed.")
-        else:
-            st.success("✅ Current usage is within free limits")
-
 
 # --- Availability Settings Tab ---
 elif selected_tab == "Availability Settings":
