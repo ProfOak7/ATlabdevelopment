@@ -1,3 +1,5 @@
 streamlit
 pandas
 streamlit-calendar
+gspread
+oauth2client
