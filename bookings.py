@@ -11,7 +11,7 @@ def get_gsheet_connection():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     
     # Read credentials from st.secrets
-    json_key = json.dumps(st.secrets["google_service_account"])
+    json_key = st.secrets["google_service_account"]
     creds = ServiceAccountCredentials.from_json_keyfile_dict(json.loads(json_key), scope)
 
     client = gspread.authorize(creds)
