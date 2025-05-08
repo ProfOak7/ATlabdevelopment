@@ -1,11 +1,9 @@
 import streamlit as st
 from datetime import datetime
 import pytz
-
 from bookings import append_booking, load_bookings
 from utils import parse_slot_time
 from email_utils import send_confirmation_email
-
 import pandas as pd
 from bookings import overwrite_bookings
 
