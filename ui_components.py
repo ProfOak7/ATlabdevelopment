@@ -9,6 +9,9 @@ from email_utils import send_confirmation_email
 import pandas as pd
 from bookings import overwrite_bookings
 
+from datetime import datetime
+from utils import parse_slot_time
+
 EXAM_NUMBERS = [str(i) for i in range(2, 11)]
 
 def show_student_signup(bookings_df, slo_slots_by_day, ncc_slots_by_day, now):
@@ -64,9 +67,6 @@ def show_student_signup(bookings_df, slo_slots_by_day, ncc_slots_by_day, now):
         if not all([name, email, student_id, selected_slot]):
             st.error("Please fill out all required fields.")
             return
- 
-    from datetime import datetime
-    from utils import parse_slot_time
 
     selected_week = parse_slot_time(selected_slot.split(" and ")[0] if dsps else selected_slot).isocalendar().week
     selected_date = parse_slot_time(selected_slot.split(" and ")[0] if dsps else selected_slot).date()
