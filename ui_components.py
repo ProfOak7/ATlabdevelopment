@@ -1,9 +1,11 @@
 import streamlit as st
 from datetime import datetime
 import pytz
+
 from bookings import append_booking, load_bookings
 from utils import parse_slot_time
 from email_utils import send_confirmation_email
+
 import pandas as pd
 from bookings import overwrite_bookings
 
@@ -56,8 +58,8 @@ def show_student_signup(bookings_df, slo_slots_by_day, ncc_slots_by_day, now):
 
     selected_slot = st.selectbox("Choose a time:", available_slots)
 
-    if st.button("Submit Booking") and (
-        (not dsps and selected_slot) or (dsps and " and " in selected_slot)
+   if st.button("Submit Booking") and (
+    (not dsps and selected_slot) or (dsps and " and " in selected_slot)
     ):
     if not all([name, email, student_id, selected_slot]):
         st.error("Please fill out all required fields.")
