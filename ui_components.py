@@ -144,8 +144,9 @@ def show_admin_view(bookings_df, slo_slots_by_day, ncc_slots_by_day, admin_passc
     st.dataframe(ncc_bookings)
     st.download_button("Download All NCC Bookings", ncc_bookings.to_csv(index=False), file_name="ncc_bookings.csv")
 
-     # --- Download Today's Appointments ---
+    # --- Download Today's Appointments ---
     st.subheader("Download Today's Appointments")
+    
     today_str = pd.Timestamp.today().strftime("%m/%d/%y")
 
     def get_sorted_today(df):
@@ -171,7 +172,7 @@ def show_admin_view(bookings_df, slo_slots_by_day, ncc_slots_by_day, admin_passc
         st.download_button("Download Today's NCC Appointments", todays_ncc.to_csv(index=False), file_name="todays_ncc_appointments.csv")
     else:
         st.info("No NCC appointments scheduled for today.")
-
+    
     # --- Reschedule Student
     st.subheader("Reschedule a Student Appointment")
     if not bookings_df.empty:
