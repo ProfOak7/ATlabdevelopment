@@ -184,49 +184,63 @@ def show_admin_view(bookings_df, slo_slots_by_day, ncc_slots_by_day, admin_passc
     else:
         st.info("No NCC appointments scheduled for today.")
     
-    # --- Reschedule Student
-    st.subheader("Reschedule a Student Appointment")
-    if not bookings_df.empty:
-        options = [f"{row['name']} ({row['email']}) - {row['slot']}" for _, row in bookings_df.iterrows()]
-        selected = st.selectbox("Select a booking to reschedule", options)
-        index = options.index(selected)
-        current_booking = bookings_df.iloc[index]
+# --- Reschedule Student
+st.subheader("Reschedule a Student Appointment")
+if not bookings_df.empty:
+    options = [f"{row['name']} ({row['email']}) - {row['slot']}" for _, row in bookings_df.iterrows()]
+    selected = st.selectbox("Select a booking to reschedule", options)
+    index = options.index(selected)
+    current_booking = bookings_df.iloc[index]
 
-        # Filter slots
-        slots_by_day = slo_slots_by_day if current_booking["lab_location"] == "SLO AT Lab" else ncc_slots_by_day
-        available_by_day = {
-            day: [s for s in slots if s not in bookings_df["slot"].values or s == current_booking["slot"]]
-            for day, slots in slots_by_day.items()
-        }
-        days_with_availability = [day for day in available_by_day if available_by_day[day]]
+    # Filter slots
+    slots_by_day = slo_slots_by_day if current_booking["lab_location"] == "SLO AT Lab" else ncc_slots_by_day
+    available_by_day = {
+        day: [s for s in slots if s not in bookings_df["slot"].values or s == current_booking["slot"]]
+        for day, slots in slots_by_day.items()
+    }
+    days_with_availability = [day for day in available_by_day if available_by_day[day]]
 
-        selected_day = st.selectbox("Choose a new day:", days_with_availability)
-        selected_slot = st.selectbox("Choose a new time:", available_by_day[selected_day])
+    selected_day = st.selectbox("Choose a new day:", days_with_availability)
+    selected_slot = st.selectbox("Choose a new time:", available_by_day[selected_day])
 
-        if st.button("Reschedule"):
-            updated_df = bookings_df.copy()
+    if st.button("Reschedule"):
+        updated_df = bookings_df.copy()
 
-            if current_booking["dsps"] and updated_df[updated_df["email"] == current_booking["email"]].shape[0] == 2:
-                old_slots = updated_df[updated_df["email"] == current_booking["email"]]["slot"].tolist()
-                updated_df = updated_df[updated_df["email"] != current_booking["email"]]
+        # --- DSPS booking (2 rows, one anonymized) ---
+        if current_booking["dsps"]:
+            # Get both the student's row and their (DSPS block) row
+            same_student_rows = updated_df[
+                ((updated_df["email"] == current_booking["email"]) & (updated_df["exam_number"] == current_booking["exam_number"])) |
+                ((updated_df["name"] == "(DSPS block)") & (updated_df["exam_number"] == current_booking["exam_number"]))
+            ]
 
-                try:
-                    i = slots_by_day[selected_day].index(selected_slot)
-                    new_blocks = [slots_by_day[selected_day][i], slots_by_day[selected_day][i+1]]
+            updated_df = updated_df.drop(same_student_rows.index)
 
-                    for s in new_blocks:
-                        new_row = current_booking.copy()
-                        new_row["slot"] = s
-                        updated_df = pd.concat([updated_df, pd.DataFrame([new_row])], ignore_index=True)
+            try:
+                i = slots_by_day[selected_day].index(selected_slot)
+                new_blocks = [slots_by_day[selected_day][i], slots_by_day[selected_day][i+1]]
 
-                    overwrite_bookings(updated_df)
-                    st.success(f"Successfully rescheduled DSPS student to {new_blocks[0]} and {new_blocks[1]}")
-                except IndexError:
-                    st.error("No consecutive block found.")
-            else:
-                updated_df.at[index, "slot"] = selected_slot
+                # Add new DSPS rows: one named, one anonymized
+                row_named = current_booking.copy()
+                row_named["slot"] = new_blocks[0]
+
+                row_anon = current_booking.copy()
+                row_anon["slot"] = new_blocks[1]
+                row_anon["name"] = "(DSPS block)"
+                row_anon["email"] = ""
+                row_anon["student_id"] = ""
+
+                updated_df = pd.concat([updated_df, pd.DataFrame([row_named, row_anon])], ignore_index=True)
+
                 overwrite_bookings(updated_df)
-                st.success(f"Successfully rescheduled to {selected_slot}!")
+                st.success(f"Successfully rescheduled DSPS student to:\n- {new_blocks[0]}\n- {new_blocks[1]}")
+            except IndexError:
+                st.error("No consecutive block found.")
+        else:
+            # Non-DSPS student reschedule
+            updated_df.at[index, "slot"] = selected_slot
+            overwrite_bookings(updated_df)
+            st.success(f"Successfully rescheduled to {selected_slot}!")
 
         # --- Grading Panel ---
     st.subheader("Enter Grades")
@@ -255,6 +269,7 @@ def show_admin_view(bookings_df, slo_slots_by_day, ncc_slots_by_day, admin_passc
             overwrite_bookings(updated_df)
             st.success("Grade successfully saved.")
             st.rerun()  # <--- this line refreshes everything
+
 
 
 
