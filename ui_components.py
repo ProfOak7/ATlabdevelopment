@@ -109,6 +109,9 @@ def show_student_signup(bookings_df, slo_slots_by_day, ncc_slots_by_day, now):
 
         st.rerun()
 
+def show_availability_settings(*args, **kwargs):
+    st.info("Availability settings coming soon.")
+
 def show_admin_view(bookings_df, slo_slots_by_day, ncc_slots_by_day, admin_passcode):
     st.title("Admin Panel")
     passcode_input = st.text_input("Enter admin passcode:", type="password")
@@ -232,6 +235,7 @@ def show_admin_view(bookings_df, slo_slots_by_day, ncc_slots_by_day, admin_passc
             overwrite_bookings(updated_df)
             st.success("Grade successfully saved.")
             st.rerun()  # <--- this line refreshes everything
+
 
 
 
