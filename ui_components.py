@@ -128,11 +128,15 @@ def show_student_signup(bookings_df, slo_slots_by_day, ncc_slots_by_day, now):
 
         st.rerun()
 
-
 def show_availability_settings(*args, **kwargs):
     st.info("Availability settings coming soon.")
 
 def show_admin_view(bookings_df, slo_slots_by_day, ncc_slots_by_day, admin_passcode):
+    import streamlit as st
+    import pandas as pd
+    from utils import parse_slot_time
+    from bookings import overwrite_bookings
+
     st.title("Admin Panel")
     passcode_input = st.text_input("Enter admin passcode:", type="password")
 
@@ -143,7 +147,6 @@ def show_admin_view(bookings_df, slo_slots_by_day, ncc_slots_by_day, admin_passc
 
     st.success("Access granted.")
 
-    # --- Split Bookings by Location
     slo_bookings = bookings_df[bookings_df["lab_location"] == "SLO AT Lab"]
     ncc_bookings = bookings_df[bookings_df["lab_location"] == "NCC AT Lab"]
 
@@ -155,9 +158,7 @@ def show_admin_view(bookings_df, slo_slots_by_day, ncc_slots_by_day, admin_passc
     st.dataframe(ncc_bookings)
     st.download_button("Download All NCC Bookings", ncc_bookings.to_csv(index=False), file_name="ncc_bookings.csv")
 
-    # --- Download Today's Appointments ---
     st.subheader("Download Today's Appointments")
-    
     today_str = pd.Timestamp.today().strftime("%m/%d/%y")
 
     def get_sorted_today(df):
@@ -183,16 +184,15 @@ def show_admin_view(bookings_df, slo_slots_by_day, ncc_slots_by_day, admin_passc
         st.download_button("Download Today's NCC Appointments", todays_ncc.to_csv(index=False), file_name="todays_ncc_appointments.csv")
     else:
         st.info("No NCC appointments scheduled for today.")
-    
-    # --- Reschedule Student
+
+    # --- Reschedule ---
     st.subheader("Reschedule a Student Appointment")
     if not bookings_df.empty:
-        options = [f"{row['name']} ({row['email']}) - {row['slot']}" for _, row in bookings_df.iterrows()]
+        options = [f"{row['name']} ({row['email']}) - {row['slot']}" for _, row in bookings_df.iterrows() if row['name'] != "(DSPS block)"]
         selected = st.selectbox("Select a booking to reschedule", options)
         index = options.index(selected)
-        current_booking = bookings_df.iloc[index]
+        current_booking = bookings_df[bookings_df["name"] + " (" + bookings_df["email"] + ") - " + bookings_df["slot"] == selected].iloc[0]
 
-        # Filter slots
         slots_by_day = slo_slots_by_day if current_booking["lab_location"] == "SLO AT Lab" else ncc_slots_by_day
         available_by_day = {
             day: [s for s in slots if s not in bookings_df["slot"].values or s == current_booking["slot"]]
@@ -206,40 +206,48 @@ def show_admin_view(bookings_df, slo_slots_by_day, ncc_slots_by_day, admin_passc
         if st.button("Reschedule"):
             updated_df = bookings_df.copy()
 
-            if current_booking["dsps"] and updated_df[updated_df["email"] == current_booking["email"]].shape[0] == 2:
-                old_slots = updated_df[updated_df["email"] == current_booking["email"]]["slot"].tolist()
-                updated_df = updated_df[updated_df["email"] != current_booking["email"]]
+            if current_booking["dsps"]:
+                same_student_rows = updated_df[
+                    ((updated_df["email"] == current_booking["email"]) & (updated_df["exam_number"] == current_booking["exam_number"])) |
+                    ((updated_df["name"] == "(DSPS block)") &
+                     (updated_df["exam_number"] == current_booking["exam_number"]) &
+                     (updated_df["lab_location"] == current_booking["lab_location"]))
+                ]
+                updated_df = updated_df.drop(same_student_rows.index)
 
                 try:
                     i = slots_by_day[selected_day].index(selected_slot)
                     new_blocks = [slots_by_day[selected_day][i], slots_by_day[selected_day][i+1]]
 
-                    for s in new_blocks:
-                        new_row = current_booking.copy()
-                        new_row["slot"] = s
-                        updated_df = pd.concat([updated_df, pd.DataFrame([new_row])], ignore_index=True)
+                    row_named = current_booking.copy()
+                    row_named["slot"] = new_blocks[0]
 
+                    row_anon = current_booking.copy()
+                    row_anon["slot"] = new_blocks[1]
+                    row_anon["name"] = "(DSPS block)"
+                    row_anon["email"] = ""
+                    row_anon["student_id"] = ""
+
+                    updated_df = pd.concat([updated_df, pd.DataFrame([row_named, row_anon])], ignore_index=True)
                     overwrite_bookings(updated_df)
-                    st.success(f"Successfully rescheduled DSPS student to {new_blocks[0]} and {new_blocks[1]}")
+                    st.success(f"Successfully rescheduled DSPS student to:\n- {new_blocks[0]}\n- {new_blocks[1]}")
                 except IndexError:
                     st.error("No consecutive block found.")
             else:
-                updated_df.at[index, "slot"] = selected_slot
+                updated_df.loc[(updated_df["email"] == current_booking["email"]) & (updated_df["slot"] == current_booking["slot"]), "slot"] = selected_slot
                 overwrite_bookings(updated_df)
                 st.success(f"Successfully rescheduled to {selected_slot}!")
 
-        # --- Grading Panel ---
+    # --- Grading ---
     st.subheader("Enter Grades")
-
     if not bookings_df.empty:
-        grade_options = [f"{row['name']} ({row['email']}) - {row['slot']}" for _, row in bookings_df.iterrows()]
+        grade_options = [f"{row['name']} ({row['email']}) - {row['slot']}" for _, row in bookings_df.iterrows() if row['name'] != "(DSPS block)"]
         selected_grade_entry = st.selectbox("Select a student to grade", grade_options)
         grade_index = grade_options.index(selected_grade_entry)
-        selected_row = bookings_df.iloc[grade_index]
+        selected_row = bookings_df[(bookings_df["name"] + " (" + bookings_df["email"] + ") - " + bookings_df["slot"]) == selected_grade_entry].iloc[0]
 
         st.markdown(f"**Current Grade:** {selected_row.get('grade', '')} &nbsp;&nbsp;|&nbsp;&nbsp; **Graded By:** {selected_row.get('graded_by', '')}")
 
-        # Store instructor initials in session state
         if "instructor_initials" not in st.session_state:
             st.session_state.instructor_initials = ""
 
@@ -248,15 +256,11 @@ def show_admin_view(bookings_df, slo_slots_by_day, ncc_slots_by_day, admin_passc
 
         if st.button("Save Grade"):
             updated_df = bookings_df.copy()
-            updated_df.at[grade_index, "grade"] = new_grade
-            updated_df.at[grade_index, "graded_by"] = new_graded_by
-            st.session_state.instructor_initials = new_graded_by  # persist for convenience
-
+            idx = updated_df.index[updated_df["email"] == selected_row["email"]][0]
+            updated_df.at[idx, "grade"] = new_grade
+            updated_df.at[idx, "graded_by"] = new_graded_by
+            st.session_state.instructor_initials = new_graded_by
             overwrite_bookings(updated_df)
             st.success("Grade successfully saved.")
-            st.rerun()  # <--- this line refreshes everything
-
-
-
-
+            st.rerun()
 
