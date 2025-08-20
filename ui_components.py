@@ -19,11 +19,12 @@ def show_student_signup(bookings_df, slo_slots_by_day, ncc_slots_by_day, now):
     **Please read before booking:**
     - You may sign up for either location (SLO or NCC).
     - Once booked, you will receive email confirmation.
-    - You may only sign up for **one appointment per week**.
+    - You may only sign up for **one appointment per week** for the same exam.
     - DSPS students may book a **double time block** if needed by clicking "I am a DSPS student".
     - You can reschedule future appointments, but you **cannot reschedule on the day** of your scheduled appointment.
     """)
 
+    # --- Form Fields ---
     name = st.text_input("Enter your full name:")
     email = st.text_input("Enter your official Cuesta email:")
     student_id = st.text_input("Enter your Student ID:")
@@ -43,11 +44,29 @@ def show_student_signup(bookings_df, slo_slots_by_day, ncc_slots_by_day, now):
     selected_day = st.selectbox("Choose a day:", list(slots_by_day.keys()))
 
     pacific = pytz.timezone("US/Pacific")
-    available_slots = [
-        s for s in slots_by_day[selected_day]
-        if s not in bookings_df["slot"].values and
-        pacific.localize(parse_slot_time(s)) > now
-    ]
+
+    if dsps:
+        # Find consecutive available slots
+        available_slots = []
+        day_slots = slots_by_day[selected_day]
+
+        for i in range(len(day_slots) - 1):
+            s1 = day_slots[i]
+            s2 = day_slots[i + 1]
+
+            if (
+                s1 not in bookings_df["slot"].values and
+                s2 not in bookings_df["slot"].values and
+                pacific.localize(parse_slot_time(s1)) > now and
+                pacific.localize(parse_slot_time(s2)) > now
+            ):
+                available_slots.append(f"{s1} and {s2}")
+    else:
+        available_slots = [
+            s for s in slots_by_day[selected_day]
+            if s not in bookings_df["slot"].values and
+            pacific.localize(parse_slot_time(s)) > now
+        ]
 
     if not available_slots:
         st.info("No available slots for this day.")
@@ -67,10 +86,8 @@ def show_student_signup(bookings_df, slo_slots_by_day, ncc_slots_by_day, now):
         today = datetime.now().date()
 
         student_bookings = bookings_df[
-            (bookings_df["email"] == email) &
-            (bookings_df["exam_number"] == exam_number)
+            (bookings_df["email"] == email) & (bookings_df["exam_number"] == exam_number)
         ]
-
         booked_weeks = student_bookings["slot"].apply(lambda s: parse_slot_time(s).isocalendar().week)
 
         if selected_week in booked_weeks.values:
@@ -79,9 +96,7 @@ def show_student_signup(bookings_df, slo_slots_by_day, ncc_slots_by_day, now):
 
             for i, row in student_bookings.iterrows():
                 old_date = parse_slot_time(row["slot"]).date()
-                old_week = old_date.isocalendar().week
-
-                if old_week == selected_week:
+                if old_date.isocalendar().week == selected_week:
                     if old_date == today:
                         same_day = True
                     else:
@@ -94,13 +109,17 @@ def show_student_signup(bookings_df, slo_slots_by_day, ncc_slots_by_day, now):
                 bookings_df = bookings_df.drop(old_slots_to_remove).reset_index(drop=True)
                 overwrite_bookings(bookings_df)
 
-        if dsps and " and " in selected_slot:
+        # --- Save Booking ---
+        if dsps:
             block_slots = selected_slot.split(" and ")
-            for slot in block_slots:
-                new_row = [name, email, student_id, dsps, slot, lab_location, exam_number, "", ""]
+            for i, slot in enumerate(block_slots):
+                if i == 0:
+                    new_row = [name, email, student_id, dsps, slot, lab_location, exam_number, "", ""]
+                else:
+                    new_row = ["(DSPS block)", "", "", dsps, slot, lab_location, exam_number, "", ""]
                 append_booking(new_row)
             st.success(f"Your DSPS appointment has been recorded for:\n- {block_slots[0]}\n- {block_slots[1]}")
-            send_confirmation_email(email, name, f"{block_slots[0]} and {block_slots[1]}", lab_location)
+            send_confirmation_email(email, name, selected_slot, lab_location)
         else:
             new_row = [name, email, student_id, dsps, selected_slot, lab_location, exam_number, "", ""]
             append_booking(new_row)
@@ -108,6 +127,7 @@ def show_student_signup(bookings_df, slo_slots_by_day, ncc_slots_by_day, now):
             send_confirmation_email(email, name, selected_slot, lab_location)
 
         st.rerun()
+
 
 def show_availability_settings(*args, **kwargs):
     st.info("Availability settings coming soon.")
@@ -235,6 +255,7 @@ def show_admin_view(bookings_df, slo_slots_by_day, ncc_slots_by_day, admin_passc
             overwrite_bookings(updated_df)
             st.success("Grade successfully saved.")
             st.rerun()  # <--- this line refreshes everything
+
 
 
 
