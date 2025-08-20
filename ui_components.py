@@ -247,3 +247,4 @@ def show_admin_view(bookings_df, slo_slots_by_day, ncc_slots_by_day, admin_passc
             st.success("Grade successfully saved.")
             st.rerun()  # <--- this line refreshes everything
 
+
