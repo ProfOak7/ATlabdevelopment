@@ -17,12 +17,12 @@ def get_gsheet_connection():
     client = gspread.authorize(creds)
     return client.open("atlab_bookings").sheet1
 
+@st.cache_data(ttl=60)
 def load_bookings():
     sheet = get_gsheet_connection()
     values = sheet.get_all_values()
 
     if not values or len(values) < 2:
-        # Return empty DataFrame with correct column structure
         return pd.DataFrame(columns=[
             "name", "student_id", "email", "lab_location",
             "day", "time", "slot", "dsps", "timestamp"
@@ -31,12 +31,14 @@ def load_bookings():
     header = values[0]
     rows = values[1:]
     df = pd.DataFrame(rows, columns=header)
-    df.columns = df.columns.str.strip().str.lower()  # Normalize column names
+    df.columns = df.columns.str.strip().str.lower()
     return df
+
 
 def append_booking(row):
     sheet = get_gsheet_connection()
     sheet.append_row(row)
+    st.cache_data.clear()  # Invalidate the cache after appending
 
 def overwrite_bookings(df):
     sheet = get_gsheet_connection()
@@ -44,4 +46,6 @@ def overwrite_bookings(df):
     sheet.insert_row(df.columns.tolist(), 1)
     for row in df.itertuples(index=False):
         sheet.append_row(list(row))
+    st.cache_data.clear()  # Invalidate cache after overwrite
+
 
