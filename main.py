@@ -21,12 +21,6 @@ now = datetime.now(pacific)
 bookings_df = load_bookings()
 slo_slots_by_day, ncc_slots_by_day = generate_slots()
 
-#temporary bug check
-st.sidebar.write("Bookings columns:", bookings_df.columns.tolist())
-st.sidebar.write("First 5 rows:")
-st.sidebar.dataframe(bookings_df.head())
-#end temporary bug check
-
 # --- Sidebar Navigation ---
 st.sidebar.title("Navigation")
 selected_tab = st.sidebar.radio("Go to:", ["Sign-Up", "Admin View", "Availability Settings"])
@@ -40,4 +34,5 @@ elif selected_tab == "Admin View":
 
 elif selected_tab == "Availability Settings":
     show_availability_settings(AVAILABILITY_PASSCODE)
+
 
