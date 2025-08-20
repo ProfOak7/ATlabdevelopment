@@ -43,23 +43,6 @@ def show_student_signup(bookings_df, slo_slots_by_day, ncc_slots_by_day, now):
     selected_day = st.selectbox("Choose a day:", list(slots_by_day.keys()))
 
     pacific = pytz.timezone("US/Pacific")
-    if dsps:
-    # Filter for consecutive available blocks for DSPS
-    available_slots = []
-    slot_list = slots_by_day[selected_day]
-
-    for i in range(len(slot_list) - 1):
-        s1, s2 = slot_list[i], slot_list[i + 1]
-
-        if (
-            s1 not in bookings_df["slot"].values and
-            s2 not in bookings_df["slot"].values and
-            pacific.localize(parse_slot_time(s1)) > now and
-            pacific.localize(parse_slot_time(s2)) > now
-        ):
-            available_slots.append(f"{s1} and {s2}")
-else:
-    # Regular single block slots
     available_slots = [
         s for s in slots_by_day[selected_day]
         if s not in bookings_df["slot"].values and
@@ -113,12 +96,9 @@ else:
 
         if dsps and " and " in selected_slot:
             block_slots = selected_slot.split(" and ")
-            for i, slot in enumerate(block_slots):
-                if i == 0:
-                    new_row = [name, email, student_id, dsps, slot, lab_location, exam_number, "", ""]
-        else:
-            new_row = ["(DSPS block)", "", "", dsps, slot, lab_location, exam_number, "", ""]
-        append_booking(new_row)
+            for slot in block_slots:
+                new_row = [name, email, student_id, dsps, slot, lab_location, exam_number, "", ""]
+                append_booking(new_row)
             st.success(f"Your DSPS appointment has been recorded for:\n- {block_slots[0]}\n- {block_slots[1]}")
             send_confirmation_email(email, name, f"{block_slots[0]} and {block_slots[1]}", lab_location)
         else:
@@ -255,7 +235,6 @@ def show_admin_view(bookings_df, slo_slots_by_day, ncc_slots_by_day, admin_passc
             overwrite_bookings(updated_df)
             st.success("Grade successfully saved.")
             st.rerun()  # <--- this line refreshes everything
-
 
 
 
