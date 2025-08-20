@@ -19,8 +19,20 @@ def get_gsheet_connection():
 
 def load_bookings():
     sheet = get_gsheet_connection()
-    data = sheet.get_all_records()
-    return pd.DataFrame(data)
+    values = sheet.get_all_values()
+
+    if not values or len(values) < 2:
+        # Return empty DataFrame with correct column structure
+        return pd.DataFrame(columns=[
+            "name", "student_id", "email", "lab_location",
+            "day", "time", "slot", "dsps", "timestamp"
+        ])
+
+    header = values[0]
+    rows = values[1:]
+    df = pd.DataFrame(rows, columns=header)
+    df.columns = df.columns.str.strip().str.lower()  # Normalize column names
+    return df
 
 def append_booking(row):
     sheet = get_gsheet_connection()
@@ -32,3 +44,4 @@ def overwrite_bookings(df):
     sheet.insert_row(df.columns.tolist(), 1)
     for row in df.itertuples(index=False):
         sheet.append_row(list(row))
+
