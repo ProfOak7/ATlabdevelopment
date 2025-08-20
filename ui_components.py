@@ -210,10 +210,15 @@ if not bookings_df.empty:
         if current_booking["dsps"]:
             # Get both the student's row and their (DSPS block) row
             same_student_rows = updated_df[
-                ((updated_df["email"] == current_booking["email"]) & (updated_df["exam_number"] == current_booking["exam_number"])) |
-                ((updated_df["name"] == "(DSPS block)") &
-                (updated_df["exam_number"] == current_booking["exam_number"]) &
-                (updated_df["lab_location"] == current_booking["lab_location"]))
+                (
+                    (updated_df["email"] == current_booking["email"]) &
+                    (updated_df["exam_number"] == current_booking["exam_number"])
+                ) |
+                (
+                    (updated_df["name"] == "(DSPS block)") &
+                    (updated_df["exam_number"] == current_booking["exam_number"]) &
+                    (updated_df["lab_location"] == current_booking["lab_location"])
+                )
             ]
 
             updated_df = updated_df.drop(same_student_rows.index)
@@ -232,17 +237,18 @@ if not bookings_df.empty:
                 row_anon["email"] = ""
                 row_anon["student_id"] = ""
 
-                updated_df = pd.concat([updated_df, pd.DataFrame([row_named, row_anon])], ignore_index=True)
+                updated_df = pd.concat(
+                    [updated_df, pd.DataFrame([row_named, row_anon])],
+                    ignore_index=True
+                )
 
                 overwrite_bookings(updated_df)
-                st.success(f"Successfully rescheduled DSPS student to:\n- {new_blocks[0]}\n- {new_blocks[1]}")
+                st.success(
+                    f"Successfully rescheduled DSPS student to:\n- {new_blocks[0]}\n- {new_blocks[1]}"
+                )
             except IndexError:
                 st.error("No consecutive block found.")
-        else:
-            # Non-DSPS student reschedule
-            updated_df.at[index, "slot"] = selected_slot
-            overwrite_bookings(updated_df)
-            st.success(f"Successfully rescheduled to {selected_slot}!")
+
 
         # --- Grading Panel ---
     st.subheader("Enter Grades")
@@ -271,6 +277,7 @@ if not bookings_df.empty:
             overwrite_bookings(updated_df)
             st.success("Grade successfully saved.")
             st.rerun()  # <--- this line refreshes everything
+
 
 
 
