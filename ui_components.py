@@ -211,7 +211,9 @@ if not bookings_df.empty:
             # Get both the student's row and their (DSPS block) row
             same_student_rows = updated_df[
                 ((updated_df["email"] == current_booking["email"]) & (updated_df["exam_number"] == current_booking["exam_number"])) |
-                ((updated_df["name"] == "(DSPS block)") & (updated_df["exam_number"] == current_booking["exam_number"]))
+                ((updated_df["name"] == "(DSPS block)") &
+                (updated_df["exam_number"] == current_booking["exam_number"]) &
+                (updated_df["lab_location"] == current_booking["lab_location"]))
             ]
 
             updated_df = updated_df.drop(same_student_rows.index)
@@ -269,6 +271,7 @@ if not bookings_df.empty:
             overwrite_bookings(updated_df)
             st.success("Grade successfully saved.")
             st.rerun()  # <--- this line refreshes everything
+
 
 
 
