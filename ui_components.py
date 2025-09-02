@@ -132,11 +132,6 @@ def show_student_signup(bookings_df, slo_slots_by_day, ncc_slots_by_day, now):
 def show_availability_settings(*args, **kwargs):
     st.info("Availability settings coming soon.")
 
-def render_bio212_tutor_panel(course_hint="BIO 212: Human Biology", knowledge_enabled=False):
-    st.title("🧠 BIO 212 Tutor")
-    st.caption("Conversational study help for BIO 212.")
-    render_chat(course_hint=course_hint, knowledge_enabled=knowledge_enabled)
-
 def show_admin_view(bookings_df, slo_slots_by_day, ncc_slots_by_day, admin_passcode):
     import streamlit as st
     import pandas as pd
@@ -269,5 +264,6 @@ def show_admin_view(bookings_df, slo_slots_by_day, ncc_slots_by_day, admin_passc
             overwrite_bookings(updated_df)
             st.success("Grade successfully saved.")
             st.rerun()
+
 
 
