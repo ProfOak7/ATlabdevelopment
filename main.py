@@ -5,13 +5,6 @@ import pytz
 from bookings import load_bookings
 from slots import generate_slots
 from ui_components import show_student_signup, show_admin_view, show_availability_settings
-import os
-import streamlit as st
-
-if "OPENAI_API_KEY" in os.environ:
-    st.sidebar.success("✅ OpenAI API key detected")
-else:
-    st.sidebar.error("❌ No OpenAI API key found")
     
 # --- Configuration ---
 st.set_page_config(page_title="Student Appointment Sign-Up", layout="wide")
@@ -41,6 +34,7 @@ elif selected_tab == "Admin View":
 
 elif selected_tab == "Availability Settings":
     show_availability_settings(AVAILABILITY_PASSCODE)
+
 
 
 
