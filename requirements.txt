@@ -3,3 +3,4 @@ pandas
 streamlit-calendar
 gspread
 oauth2client
+openai>=1.40.0
