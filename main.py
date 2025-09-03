@@ -6,6 +6,7 @@ from bookings import load_bookings
 from slots import generate_slots
 from ui_components import show_student_signup, show_admin_view, show_availability_settings
 from tutor import init_tutor
+from tutor import _load_and_index_logistics
 from ui_components import render_tutor_panel
     
 # --- Configuration ---
@@ -38,18 +39,30 @@ if selected_tab == "Sign-Up":
 elif selected_tab == "Admin View":
     show_admin_view(bookings_df, slo_slots_by_day, ncc_slots_by_day, ADMIN_PASSCODE)
 
-elif selected_tab == "Availability Settings":
-    show_availability_settings(AVAILABILITY_PASSCODE)
-
 elif selected_tab == "BIO 205 Tutor":
-    # Initialize tutor knowledge (optional: path to folder with .md/.txt)
+    # --- Tutor init (run when this tab is opened) ---
     KNOWLEDGE_DIR = "./bio205_knowledge"
+
+    # Save for the "Reindex knowledge" button in tutor.py
+    st.session_state["bio205_knowledge_dir"] = KNOWLEDGE_DIR
+
+    # Build embeddings index (if not already built this session)
     init_tutor(KNOWLEDGE_DIR)
 
+    # Parse the designated syllabus files and cache logistics
+    _load_and_index_logistics(KNOWLEDGE_DIR)
+
+    # (Optional) let the user choose their section so logistics prefer the right syllabus
+    section = st.sidebar.selectbox("Section", ["70865 (Paso Tue)", "70868 (SLO Wed)"], index=0)
+    st.session_state["bio205_section"] = "70865" if "70865" in section else "70868"
+
+    # Render the chat panel
     render_tutor_panel(
-    course_hint="BIO 205: Human Anatomy",
-    knowledge_enabled=bool(KNOWLEDGE_DIR)
+        course_hint="BIO 205: Human Anatomy",
+        knowledge_enabled=True  # we have a knowledge dir
     )
+
+
 
 
 
