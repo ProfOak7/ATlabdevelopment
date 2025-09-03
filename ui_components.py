@@ -7,6 +7,7 @@ from utils import parse_slot_time
 from email_utils import send_confirmation_email
 
 import pandas as pd
+from tutor import render_chat
 
 EXAM_NUMBERS = [str(i) for i in range(2, 11)]
 
@@ -263,6 +264,7 @@ def show_admin_view(bookings_df, slo_slots_by_day, ncc_slots_by_day, admin_passc
             overwrite_bookings(updated_df)
             st.success("Grade successfully saved.")
             st.rerun()
+
 
 
 
