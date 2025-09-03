@@ -59,6 +59,8 @@ elif selected_tab == "BIO 205 Tutor":
         if not f.exists():
             f.write_text(st.secrets["BIO205_LOGISTICS_MD"], encoding="utf-8")
 
+    # now render
+    render_chat()
 
 
 
