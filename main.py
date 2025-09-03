@@ -49,7 +49,8 @@ elif selected_tab == "BIO 205 Tutor":
     render_bio212_tutor_panel(
     course_hint="BIO 205: Human Anatomy",
     knowledge_enabled=bool(KNOWLEDGE_DIR)
-)
+    )
+
 
 
 
