@@ -47,16 +47,20 @@ elif selected_tab == "Admin View":
 elif selected_tab == "BIO 205 Tutor":
     st.title("BIO 205 Tutor — Human Anatomy")
 
-    # Initialize the Tutor's knowledge path once per session.
+    # make sure tutor has a knowledge dir to look at
     if "bio205_knowledge_dir" not in st.session_state:
-        st.session_state["bio205_knowledge_dir"] = _DEFAULT_KNOWLEDGE_DIR
+        st.session_state["bio205_knowledge_dir"] = "./bio205_knowledge"
 
-    # Index logistics the first time we land on this tab (safe to call multiple times)
-    if not st.session_state.get("_bio205_indexed_once"):
-        _load_and_index_logistics(st.session_state["bio205_knowledge_dir"])
-        st.session_state["_bio205_indexed_once"] = True
+    # if you’re keeping the file in secrets, write it once here too:
+    if "BIO205_LOGISTICS_MD" in st.secrets:
+        p = pathlib.Path(st.session_state["bio205_knowledge_dir"])
+        p.mkdir(parents=True, exist_ok=True)
+        f = p / "bio205_logistics.md"
+        if not f.exists():
+            f.write_text(st.secrets["BIO205_LOGISTICS_MD"], encoding="utf-8")
 
-    # Render the Tutor chat UI (self‑contained; sidebar there has a Reindex button)
-    render_tutor_chat()
+    # now render
+    render_chat()
+
 
 
