@@ -364,6 +364,10 @@ def render_chat(
     show_sidebar_controls: bool = True,
 ) -> None:
     """Renders a chat panel. Deterministic logistics first; otherwise model-only."""
+
+    # 🔑 Make sure syllabus/logistics are indexed before anything else
+    _ensure_logistics_loaded()
+
     api_key = os.getenv("OPENAI_API_KEY")
     client = OpenAI(api_key=api_key) if api_key else None
     if client is None:
