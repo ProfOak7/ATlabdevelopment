@@ -52,43 +52,115 @@ _DUE_PAT = re.compile(r"\bdue\b", re.I)
 _POLICY_PAT = re.compile(r"\bpolicy\b", re.I)
 
 def _extract_logistics_from_text(text: str, source_name: str) -> dict:
+    """
+    Parse syllabus-like text and pull structured logistics.
+    We capture 'Exam N' or 'Practical N' and attach the closest date/time
+    by scanning a small window of neighboring lines.
+    """
     data = {
         "source": source_name,
-        "exams": [],
-        "lab_practicals": [],
+        "exams": [],           # {name, number, date?, time?, line}
+        "lab_practicals": [],  # same
         "office_hours": None,
         "late_policy": None,
         "quizzes_policy": None,
         "due_lines": []
     }
-    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
-    for ln in lines:
-        if _EXAM_PAT.search(ln):
-            name = _EXAM_PAT.search(ln).group(0)
-            date = _DATE_PAT.search(ln)
-            time = _TIME_PAT.search(ln)
-            entry = {
-                "name": name,
-                "date": date.group(0) if date else None,
-                "time": time.group(0) if time else None,
-                "line": ln
-            }
-            if "practical" in name.lower():
-                data["lab_practicals"].append(entry)
-            else:
-                data["exams"].append(entry)
+
+    # Pre-split and keep original lines for context windows
+    raw_lines = [ln.rstrip() for ln in text.splitlines()]
+    # Also keep a stripped version for searches
+    lines = [ln.strip() for ln in raw_lines]
+
+    # Helper to find date/time in a small window around an index
+    def nearest_datetime(i: int, win: int = 2):
+        # Search current line first, then ±win lines
+        idxs = [i] + [j for k in range(1, win+1) for j in (i-k, i+k) if 0 <= j < len(lines)]
+        found_date, found_time = None, None
+        for j in idxs:
+            ln = lines[j]
+            if found_date is None:
+                m = _DATE_PAT.search(ln)
+                if m:
+                    found_date = m.group(0)
+            if found_time is None:
+                t = _TIME_PAT.search(ln)
+                if t:
+                    found_time = t.group(0)
+            if found_date and found_time:
+                break
+        return found_date, found_time
+
+    # Dedupe map: (kind, number) -> entry
+    seen = {}
+
+    for i, ln in enumerate(lines):
+        if not ln:
             continue
+
+        # Office hours / policies (single-capture, first occurrence)
         if _OFFICE_PAT.search(ln) and not data["office_hours"]:
-            data["office_hours"] = ln
-            continue
+            data["office_hours"] = raw_lines[i].strip()
         if (_LATE_PAT.search(ln) or ("late" in ln.lower() and _POLICY_PAT.search(ln))) and not data["late_policy"]:
-            data["late_policy"] = ln
-            continue
+            data["late_policy"] = raw_lines[i].strip()
         if _QUIZ_PAT.search(ln) and "policy" in ln.lower() and not data["quizzes_policy"]:
-            data["quizzes_policy"] = ln
-            continue
+            data["quizzes_policy"] = raw_lines[i].strip()
         if _DUE_PAT.search(ln):
-            data["due_lines"].append(ln)
+            data["due_lines"].append(raw_lines[i].strip())
+
+        # Exams / Practicals
+        m = _EXAM_PAT.search(ln)
+        if not m:
+            continue
+
+        label = m.group(0)  # e.g., "Exam 1", "Practical 1", "Exam"
+        # Try to pull an explicit number (if present)
+        num_match = re.search(r"(?:Exam|Midterm|Test|Practical)\s*(\d+)", label, re.I)
+        number = num_match.group(1) if num_match else None
+
+        # If the line has only the word 'exam' with no number, skip unless there is a date nearby
+        if not number and not _DATE_PAT.search(ln):
+            # look around for a following line that attaches to 'Exam' (e.g., date on next line)
+            date_near, _ = nearest_datetime(i, 1)
+            if not date_near:
+                continue  # too vague; ignore to avoid noise
+
+        # Find nearest date/time in a small window
+        date_str, time_str = nearest_datetime(i, win=2)
+
+        key_kind = "practical" if "practical" in label.lower() else "exam"
+        dedupe_key = (key_kind, number or raw_lines[i].strip().lower())
+
+        # Build a tidy name like "Exam 1" or "Practical 1"
+        nice_name = (("Practical " if key_kind == "practical" else "Exam ") + (number if number else "")).strip()
+
+        entry = {
+            "name": nice_name if number or "practical" in label.lower() else label.strip(),
+            "number": number,
+            "date": date_str,
+            "time": time_str,
+            "line": raw_lines[i].strip()
+        }
+        # Keep the first complete entry per dedupe_key, prefer ones with a date
+        if dedupe_key not in seen or (date_str and not seen[dedupe_key].get("date")):
+            seen[dedupe_key] = entry
+
+    # Move from map to lists
+    for (kind, _), entry in seen.items():
+        if kind == "practical":
+            data["lab_practicals"].append(entry)
+        else:
+            data["exams"].append(entry)
+
+    # Sort by number when available
+    def _num_key(e):
+        try:
+            return int(e["number"]) if e.get("number") else 999
+        except Exception:
+            return 999
+
+    data["exams"].sort(key=_num_key)
+    data["lab_practicals"].sort(key=_num_key)
     return data
 
 def _load_and_index_logistics(knowledge_dir: Optional[str]) -> None:
@@ -127,47 +199,73 @@ def _answer_from_indexed_logistics(q: str) -> Optional[str]:
     info = st.session_state.get("bio205_logistics")
     if not info:
         return None
-    ql = q.lower()
-    parts = []
 
+    ql = q.lower().strip()
+
+    # Prefer selected section, if present
+    sec = st.session_state.get("bio205_section")
+    if sec:
+        info = sorted(info, key=lambda b: 0 if sec in b.get("source","") else 1)
+
+    # Try to detect a specific exam/practical number in the question
+    num = None
+    mnum = re.search(r"(?:exam|practical)\s*(\d+)", ql, re.I)
+    if mnum:
+        num = mnum.group(1)
+
+    # Build response lines
+    def fmt(entry, src):
+        bits = [entry["name"]]
+        if entry.get("date"):
+            bits.append(entry["date"])
+        if entry.get("time"):
+            bits.append(entry["time"])
+        return "- " + " ".join(bits) + f"  \n[Source: {src}]"
+
+    # Exams / Practicals only if the question is about them or generically about 'exam/test'
     if any(k in ql for k in ["exam", "midterm", "test", "practical"]):
+        lines = []
         for block in info:
             src = block["source"]
-            for e in block.get("exams", []):
-                line = f"- {e['name']}"
-                if e.get("date"): line += f": {e['date']}"
-                if e.get("time"): line += f" {e['time']}"
-                line += f"  \n[Source: {src}]"
-                parts.append(line)
-            for p in block.get("lab_practicals", []):
-                line = f"- {p['name']}"
-                if p.get("date"): line += f": {p['date']}"
-                if p.get("time"): line += f" {p['time']}"
-                line += f"  \n[Source: {src}]"
-                parts.append(line)
-        if parts:
-            return "**Exams/Practicals**\n" + "\n".join(parts)
+            items = block.get("exams", []) + block.get("lab_practicals", [])
+            for e in items:
+                if num and e.get("number") != num:
+                    continue
+                # If no number asked and this entry has neither date nor time, skip to avoid noise
+                if not num and not (e.get("date") or e.get("time")):
+                    continue
+                lines.append(fmt(e, src))
+        if lines:
+            title = f"**{('Exam ' + num) if num else 'Exams/Practicals'}**"
+            return title + "\n" + "\n".join(lines)
 
+    # Office hours
     if "office hour" in ql or "office-hours" in ql:
         for block in info:
             if block.get("office_hours"):
                 return f"**Office Hours**  \n{block['office_hours']}  \n[Source: {block['source']}]"
 
+    # Late policy
     if "late policy" in ql or "late work" in ql or ("late" in ql and "policy" in ql):
         for block in info:
             if block.get("late_policy"):
                 return f"**Late Policy**  \n{block['late_policy']}  \n[Source: {block['source']}]"
 
+    # Quizzes
     if "quiz" in ql or "quizzes" in ql:
         for block in info:
             if block.get("quizzes_policy"):
                 return f"**Quizzes**  \n{block['quizzes_policy']}  \n[Source: {block['source']}]"
 
+    # Generic due date lines
     if "due" in ql:
+        lines = []
         for block in info:
-            if block.get("due_lines"):
-                return "**Due items found in syllabus**\n" + \
-                       "\n".join(f"- {ln}  \n[Source: {block['source']}]" for ln in block["due_lines"])
+            for ln in block.get("due_lines", []):
+                lines.append(f"- {ln}  \n[Source: {block['source']}]")
+        if lines:
+            return "**Due items found in syllabus**\n" + "\n".join(lines)
+
     return None
 
 # ------------- Retrieval helpers -------------
