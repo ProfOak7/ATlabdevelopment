@@ -133,7 +133,11 @@ def _extract_logistics_from_text(text: str, source_name: str) -> dict:
         time_str = nearest_time(i, win=2)
 
         kind = "practical" if "practical" in label.lower() else "exam"
-        dedupe_key = (kind, number or raw_lines[i].strip().lower())
+
+        # Prefer a carried-forward date; otherwise look for an inline date on this line
+        date_str = current_date or (_DATE_PAT.search(ln).group(0) if _DATE_PAT.search(ln) else None)
+        time_str = nearest_time(i, win=2)
+
         nice_name = (("Practical " if kind == "practical" else "Exam ") + (number if number else "")).strip()
 
         entry = {
@@ -144,27 +148,14 @@ def _extract_logistics_from_text(text: str, source_name: str) -> dict:
             "line": raw_lines[i].strip()
         }
 
-        # Prefer entries that actually have a date
-        if dedupe_key not in seen or (date_str and not seen[dedupe_key].get("date")):
-            seen[dedupe_key] = entry
-
-    # Move from map to lists
-    for (kind, _), entry in seen.items():
-        if kind == "practical":
-            data["lab_practicals"].append(entry)
+        # 🔑 NEW: allow multiple entries of the same exam number (use date/line in the key)
+        if number:
+            key = (kind, number, (date_str or raw_lines[i].strip().lower()))
         else:
-            data["exams"].append(entry)
+            key = (kind, raw_lines[i].strip().lower())
 
-    # Sort numerically when possible (Exam 1, Exam 2, …)
-    def _num_key(e):
-        try:
-            return int(e["number"]) if e.get("number") else 999
-        except Exception:
-            return 999
-
-    data["exams"].sort(key=_num_key)
-    data["lab_practicals"].sort(key=_num_key)
-    return data
+        if key not in seen:
+            seen[key] = entry
 
 def _load_and_index_logistics(knowledge_dir: Optional[str]) -> None:
     """Scan knowledge_dir for syllabus files, extract logistics, and cache them."""
