@@ -5,9 +5,7 @@
 #   streamlit run tutor.py
 #
 # Sidebar tips:
-#   • Set a knowledge folder path (defaults to env BIO205_KNOWLEDGE_DIR or ./knowledge)
 #   • Click “🔄 Reindex logistics” after changing files or uploading
-#   • (Optional) Set a preferred section string (e.g., a CRN like 70865) to prioritize
 
 import os
 import re
@@ -359,9 +357,6 @@ def render_chat(
         # Knowledge folder controls
         if "bio205_knowledge_dir" not in st.session_state:
             st.session_state.bio205_knowledge_dir = _DEFAULT_KNOWLEDGE_DIR
-
-        st.sidebar.text_input("Knowledge folder path", key="bio205_knowledge_dir")
-        st.sidebar.text_input("Preferred section/CRN keyword (optional)", key="bio205_section")
 
         # Optional file uploader for quick testing
         up = st.sidebar.file_uploader("Upload a .md/.txt logistics file", type=["md", "txt"], accept_multiple_files=True)
