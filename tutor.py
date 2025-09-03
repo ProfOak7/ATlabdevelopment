@@ -336,10 +336,8 @@ def _answer_from_indexed_logistics(q: str) -> Optional[str]:
 
 def _mode_instruction(mode: str) -> str:
     return {
-        "Coach":    "Act as a Socratic coach. Ask brief, targeted questions; reveal hints progressively; check understanding.",
         "Explainer":"Explain clearly with analogies and a quick misconception check tied to everyday life.",
         "Quizzer":  "Ask 2–4 short questions, give immediate feedback, then a brief recap.",
-        "Editor":   "Give formative, rubric-aligned feedback on short writing. Suggest 2–3 concrete edits.",
     }.get(mode, "Explain clearly and check understanding briefly.")
 
 
