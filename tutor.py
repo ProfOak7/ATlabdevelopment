@@ -128,8 +128,8 @@ def _extract_logistics_from_text(text: str, source_name: str) -> dict:
             if not current_date:
                 continue
 
-        # Attach the carried-forward date (if any) and look for a nearby time
-        date_str = current_date
+        # Prefer a carried-forward date; otherwise look for an inline date on this line
+        date_str = current_date or (_DATE_PAT.search(ln).group(0) if _DATE_PAT.search(ln) else None)
         time_str = nearest_time(i, win=2)
 
         kind = "practical" if "practical" in label.lower() else "exam"
