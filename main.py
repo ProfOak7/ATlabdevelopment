@@ -27,7 +27,7 @@ slo_slots_by_day, ncc_slots_by_day = generate_slots()
 st.sidebar.title("Navigation")
 selected_tab = st.sidebar.radio(
     "Go to:", 
-    ["Sign-Up", "Admin View", "BIO 205 Tutor"]
+    ["Sign-Up", "BIO 205 Tutor", "Admin View"]
 )
 
 
@@ -50,6 +50,7 @@ elif selected_tab == "BIO 205 Tutor":
     course_hint="BIO 205: Human Anatomy",
     knowledge_enabled=bool(KNOWLEDGE_DIR)
     )
+
 
 
 
