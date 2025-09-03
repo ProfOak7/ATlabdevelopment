@@ -24,6 +24,86 @@ def _mode_instruction(mode: str) -> str:
         "Editor":   "Give formative, rubric-aligned feedback on short writing. Suggest 2–3 concrete edits.",
     }.get(mode, "Explain clearly and check understanding briefly.")
 
+def _load_and_index_logistics(knowledge_dir: Optional[str]) -> None:
+    """Scan knowledge_dir for syllabus files, extract logistics, and cache them."""
+    st.session_state.bio205_logistics = None
+    if not knowledge_dir:
+        return
+    base = pathlib.Path(knowledge_dir)
+    if not base.exists():
+        return
+
+    collected = []
+    for p in base.rglob("*"):
+        if not p.is_file():
+            continue
+        if p.suffix.lower() not in {".txt", ".md"}:
+            continue
+        if not _is_logistics_file(p):
+            continue
+        try:
+            txt = p.read_text(encoding="utf-8", errors="ignore")
+        except Exception:
+            continue
+        data = _extract_logistics_from_text(txt, p.name)
+        collected.append(data)
+
+    if collected:
+        st.session_state.bio205_logistics = collected
+
+def _answer_from_indexed_logistics(q: str) -> Optional[str]:
+    """Answer logistics Qs deterministically from cached syllabus extracts."""
+    info = st.session_state.get("bio205_logistics")
+    if not info:
+        return None
+    ql = q.lower()
+    parts = []
+
+    # Exams & Practicals
+    if any(k in ql for k in ["exam", "midterm", "test", "practical"]):
+        for block in info:
+            src = block["source"]
+            for e in block.get("exams", []):
+                line = f"- {e['name']}"
+                if e.get("date"): line += f": {e['date']}"
+                if e.get("time"): line += f" {e['time']}"
+                line += f"  \n[Source: {src}]"
+                parts.append(line)
+            for p in block.get("lab_practicals", []):
+                line = f"- {p['name']}"
+                if p.get("date"): line += f": {p['date']}"
+                if p.get("time"): line += f" {p['time']}"
+                line += f"  \n[Source: {src}]"
+                parts.append(line)
+        if parts:
+            return "**Exams/Practicals**\n" + "\n".join(parts)
+
+    # Office hours
+    if "office hour" in ql or "office-hours" in ql:
+        for block in info:
+            if block.get("office_hours"):
+                return f"**Office Hours**  \n{block['office_hours']}  \n[Source: {block['source']}]"
+
+    # Late policy
+    if "late policy" in ql or "late work" in ql or ("late" in ql and "policy" in ql):
+        for block in info:
+            if block.get("late_policy"):
+                return f"**Late Policy**  \n{block['late_policy']}  \n[Source: {block['source']}]"
+
+    # Quizzes
+    if "quiz" in ql or "quizzes" in ql:
+        for block in info:
+            if block.get("quizzes_policy"):
+                return f"**Quizzes**  \n{block['quizzes_policy']}  \n[Source: {block['source']}]"
+
+    # Generic due date lines
+    if "due" in ql:
+        for block in info:
+            if block.get("due_lines"):
+                return "**Due items found in syllabus**\n" + \
+                       "\n".join(f"- {ln}  \n[Source: {block['source']}]" for ln in block["due_lines"])
+
+    return None
 # ---------- Retrieval helpers (optional) ----------
 def _read_knowledge(knowledge_dir: str) -> List[Dict[str, Any]]:
     docs: List[Dict[str, Any]] = []
