@@ -1,4 +1,5 @@
-# tutor.py
+# tutor.py  — BIO 205 (Human Anatomy)
+
 import os
 import pathlib
 from typing import List, Dict, Any, Optional
@@ -6,8 +7,9 @@ from typing import List, Dict, Any, Optional
 import streamlit as st
 from openai import OpenAI
 
-DEFAULT_MODEL = os.getenv("BIO212_TUTOR_MODEL", "gpt-4o-mini")
-EMBED_MODEL   = os.getenv("BIO212_EMBED_MODEL", "text-embedding-3-large")
+# Use BIO205-specific env vars; fall back to sensible defaults
+DEFAULT_MODEL = os.getenv("BIO205_TUTOR_MODEL", "gpt-4o-mini")
+EMBED_MODEL   = os.getenv("BIO205_EMBED_MODEL", "text-embedding-3-large")
 
 SYSTEM_PROMPT = """You are BIO 205 Tutor for Human Anatomy at Cuesta College.
 Be concise, friendly, and accurate. Prefer Socratic guidance (ask one quick
@@ -45,11 +47,11 @@ def init_tutor(knowledge_dir: Optional[str]) -> None:
     """
     Call once (e.g., at app start). Builds an in-memory index if knowledge_dir is provided.
     """
-    if "bio212_index_ready" in st.session_state:
+    if "bio205_index_ready" in st.session_state:
         return
-    st.session_state.bio212_index_ready = True
-    st.session_state.bio212_index = None
-    st.session_state.bio212_docs = None
+    st.session_state.bio205_index_ready = True
+    st.session_state.bio205_index = None
+    st.session_state.bio205_docs = None
 
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key or not knowledge_dir:
@@ -67,11 +69,11 @@ def init_tutor(knowledge_dir: Optional[str]) -> None:
     V = np.array(vecs, dtype="float32")
     V = V / (np.linalg.norm(V, axis=1, keepdims=True) + 1e-12)
 
-    st.session_state.bio212_docs = docs
-    st.session_state.bio212_index = V  # vectors aligned with docs
+    st.session_state.bio205_docs = docs
+    st.session_state.bio205_index = V  # vectors aligned with docs
 
 def _retrieve(query: str, k: int = 4) -> List[Dict[str, Any]]:
-    if st.session_state.get("bio212_index") is None or st.session_state.get("bio212_docs") is None:
+    if st.session_state.get("bio205_index") is None or st.session_state.get("bio205_docs") is None:
         return []
     import numpy as np
     api_key = os.getenv("OPENAI_API_KEY")
@@ -80,18 +82,18 @@ def _retrieve(query: str, k: int = 4) -> List[Dict[str, Any]]:
     client = OpenAI(api_key=api_key)
     qv = _embed_texts(client, [query])[0]
     qv = qv / (np.linalg.norm(qv) + 1e-12)
-    sims = st.session_state.bio212_index @ qv
+    sims = st.session_state.bio205_index @ qv
     topk = sims.argsort()[-k:][::-1]
     out = []
     for i in topk:
-        d = st.session_state.bio212_docs[int(i)]
+        d = st.session_state.bio205_docs[int(i)]
         out.append({"filename": d["filename"], "text": d["text"], "score": float(sims[int(i)])})
     return out
 
 # ---------- Public UI ----------
 
 def render_chat(
-    course_hint: str = "BIO 212: Human Biology",
+    course_hint: str = "BIO 205: Human Anatomy",
     knowledge_enabled: bool = False,   # True if you passed a real knowledge_dir to init_tutor()
     show_sidebar_controls: bool = True,
 ) -> None:
@@ -102,18 +104,18 @@ def render_chat(
         st.warning("Set OPENAI_API_KEY to enable live answers.")
 
     if show_sidebar_controls:
-        st.sidebar.subheader("BIO 212 Tutor")
+        st.sidebar.subheader("BIO 205 Tutor")
         mode = st.sidebar.radio("Mode", ["Coach", "Explainer", "Quizzer", "Editor"], index=0)
         use_retrieval = st.sidebar.checkbox("Use course knowledge", value=knowledge_enabled)
         temperature = st.sidebar.slider("Creativity", 0.0, 1.0, 0.4)
     else:
         mode, use_retrieval, temperature = "Coach", knowledge_enabled, 0.4
 
-    if "bio212_chat" not in st.session_state:
-        st.session_state.bio212_chat = [{"role": "system", "content": SYSTEM_PROMPT}]
+    if "bio205_chat" not in st.session_state:
+        st.session_state.bio205_chat = [{"role": "system", "content": SYSTEM_PROMPT}]
 
     # Show prior turns
-    for m in st.session_state.bio212_chat:
+    for m in st.session_state.bio205_chat:
         if m["role"] == "user":
             with st.chat_message("user"):
                 st.markdown(m["content"])
@@ -121,12 +123,12 @@ def render_chat(
             with st.chat_message("assistant"):
                 st.markdown(m["content"])
 
-    user_text = st.chat_input("Ask about BIO 212 (e.g., 'Why is the heart a double pump?')")
+    user_text = st.chat_input("Ask about BIO 205 (e.g., 'How do AV valves differ from semilunar valves?')")
     if not user_text:
         return
 
     # Echo user
-    st.session_state.bio212_chat.append({"role": "user", "content": user_text})
+    st.session_state.bio205_chat.append({"role": "user", "content": user_text})
     with st.chat_message("user"):
         st.markdown(user_text)
 
@@ -135,7 +137,7 @@ def render_chat(
                 {"role": "developer", "content": dev}]
 
     # Keep last ~8 turns for cost control
-    short_hist = [m for m in st.session_state.bio212_chat if m["role"] in ("user", "assistant")][-8:]
+    short_hist = [m for m in st.session_state.bio205_chat if m["role"] in ("user", "assistant")][-8:]
     messages.extend(short_hist)
 
     # Attach retrieval snippets if enabled
@@ -160,4 +162,4 @@ def render_chat(
         except Exception as e:
             reply = f"Sorry, I ran into an error: `{e}`"
         st.markdown(reply)
-        st.session_state.bio212_chat.append({"role": "assistant", "content": reply})
+        st.session_state.bio205_chat.append({"role": "assistant", "content": reply})
