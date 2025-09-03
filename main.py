@@ -53,7 +53,7 @@ elif selected_tab == "BIO 205 Tutor":
     _load_and_index_logistics(KNOWLEDGE_DIR)
 
     # (Optional) let the user choose their section so logistics prefer the right syllabus
-    section = st.sidebar.selectbox("Section", ["70865 (Paso Tue)", "70868 (SLO Wed)"], index=0)
+    section = st.sidebar.selectbox("Section", ["70868 (Paso Tue)", "70865 (SLO Wed)"], index=0)
     st.session_state["bio205_section"] = "70865" if "70865" in section else "70868"
 
     # Render the chat panel
