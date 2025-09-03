@@ -45,9 +45,6 @@ elif selected_tab == "BIO 205 Tutor":
     # Save for the "Reindex knowledge" button in tutor.py
     st.session_state["bio205_knowledge_dir"] = KNOWLEDGE_DIR
 
-    # Build embeddings index (if not already built this session)
-    init_tutor(KNOWLEDGE_DIR)
-
     # Parse the designated syllabus files and cache logistics
     _load_and_index_logistics(KNOWLEDGE_DIR)
 
@@ -56,6 +53,7 @@ elif selected_tab == "BIO 205 Tutor":
         course_hint="BIO 205: Human Anatomy",
         knowledge_enabled=True  # we have a knowledge dir
     )
+
 
 
 
