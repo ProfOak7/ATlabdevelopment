@@ -9,7 +9,7 @@ from openai import OpenAI
 DEFAULT_MODEL = os.getenv("BIO212_TUTOR_MODEL", "gpt-4o-mini")
 EMBED_MODEL   = os.getenv("BIO212_EMBED_MODEL", "text-embedding-3-large")
 
-SYSTEM_PROMPT = """You are BIO 212 Tutor for Human Biology at Cuesta College.
+SYSTEM_PROMPT = """You are BIO 205 Tutor for Human Anatomy at Cuesta College.
 Be concise, friendly, and accurate. Prefer Socratic guidance (ask one quick
 question before explaining when appropriate). NEVER reveal answer keys; give hints
 instead. When you use course knowledge, append [Source: <filename>]."""
