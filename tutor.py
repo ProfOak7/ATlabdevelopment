@@ -351,7 +351,7 @@ def render_chat(
 
     if show_sidebar_controls:
         st.sidebar.subheader("BIO 205 Tutor")
-        mode = st.sidebar.radio("Mode", ["Coach", "Explainer", "Quizzer", "Editor"], index=0)
+        mode = st.sidebar.radio("Mode", [ "Explainer", "Quizzer"], index=0)
         temperature = st.sidebar.slider("Creativity", 0.0, 1.0, 0.4)
 
         # Knowledge folder controls
