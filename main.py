@@ -41,7 +41,7 @@ if selected_tab == "Sign‑Up":
     show_student_signup(bookings_df, slo_slots_by_day, ncc_slots_by_day, now)
 
 elif selected_tab == "Admin View":
-    st.title("Admin View")
+    st.title("")
     show_admin_view(bookings_df, slo_slots_by_day, ncc_slots_by_day, ADMIN_PASSCODE)
 
 elif selected_tab == "BIO 205 Tutor":
@@ -58,4 +58,5 @@ elif selected_tab == "BIO 205 Tutor":
 
     # Render the Tutor chat UI (self‑contained; sidebar there has a Reindex button)
     render_tutor_chat()
+
 
