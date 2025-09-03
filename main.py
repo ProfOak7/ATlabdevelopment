@@ -41,15 +41,16 @@ elif selected_tab == "Admin View":
 elif selected_tab == "Availability Settings":
     show_availability_settings(AVAILABILITY_PASSCODE)
 
-elif selected_tab == "BIO 212 Tutor":
+elif selected_tab == "BIO 205 Tutor":
     # Initialize tutor knowledge (optional: path to folder with .md/.txt)
     KNOWLEDGE_DIR = "./bio212_knowledge"
     init_tutor(KNOWLEDGE_DIR)
 
     render_bio212_tutor_panel(
-        course_hint="BIO 212: Human Biology",
+        course_hint="BIO 205: Human Anatony",
         knowledge_enabled=bool(KNOWLEDGE_DIR)
     )
+
 
 
 
