@@ -11,8 +11,6 @@ from openai import OpenAI
 
 # Use BIO205-specific env vars; fall back to sensible defaults
 DEFAULT_MODEL = os.getenv("BIO205_TUTOR_MODEL", "gpt-4o-mini")
-EMBED_MODEL   = os.getenv("BIO205_EMBED_MODEL", "text-embedding-3-large")
-
 SYSTEM_PROMPT = """You are BIO 205 Tutor for Human Anatomy at Cuesta College.
 Be concise, friendly, and accurate. Prefer Socratic guidance (ask one quick
 question before explaining when appropriate). NEVER reveal answer keys; give hints
@@ -270,72 +268,6 @@ def _answer_from_indexed_logistics(q: str) -> Optional[str]:
             return "**Due items found in syllabus**\n" + "\n".join(lines)
 
     return None
-
-# ------------- Retrieval helpers -------------
-
-def _read_knowledge(knowledge_dir: str) -> List[Dict[str, Any]]:
-    docs: List[Dict[str, Any]] = []
-    base = pathlib.Path(knowledge_dir)
-    if not base.exists():
-        return docs
-    for p in base.rglob("*"):
-        if p.is_file() and p.suffix.lower() in {".md", ".txt"}:
-            text = p.read_text(encoding="utf-8", errors="ignore")
-            # chunk (with no overlap, simple)
-            for i in range(0, len(text), 1200):
-                docs.append({"filename": p.name, "text": text[i:i+1200]})
-    return docs
-
-def _embed_texts(client: OpenAI, texts: List[str]) -> List[List[float]]:
-    if not texts:
-        return []
-    emb = client.embeddings.create(model=EMBED_MODEL, input=texts)
-    return [e.embedding for e in emb.data]
-
-def init_tutor(knowledge_dir: Optional[str]) -> None:
-    """Call once (e.g., at app start). Builds an in-memory index if knowledge_dir is provided."""
-    if "bio205_index_ready" in st.session_state:
-        return
-    st.session_state.bio205_index_ready = True
-    st.session_state.bio205_index = None
-    st.session_state.bio205_docs = None
-
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key or not knowledge_dir:
-        return
-    client = OpenAI(api_key=api_key)
-
-    docs = _read_knowledge(knowledge_dir)
-    if not docs:
-        return
-
-    import numpy as np
-    vecs = _embed_texts(client, [d["text"] for d in docs])
-    if not vecs:
-        return
-    V = np.array(vecs, dtype="float32")
-    V = V / (np.linalg.norm(V, axis=1, keepdims=True) + 1e-12)
-
-    st.session_state.bio205_docs = docs
-    st.session_state.bio205_index = V  # vectors aligned with docs
-
-def _retrieve(query: str, k: int = 4) -> List[Dict[str, Any]]:
-    if st.session_state.get("bio205_index") is None or st.session_state.get("bio205_docs") is None:
-        return []
-    import numpy as np
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        return []
-    client = OpenAI(api_key=api_key)
-    qv = _embed_texts(client, [query])[0]
-    qv = qv / (np.linalg.norm(qv) + 1e-12)
-    sims = st.session_state.bio205_index @ qv
-    topk = sims.argsort()[-k:][::-1]
-    out = []
-    for i in topk:
-        d = st.session_state.bio205_docs[int(i)]
-        out.append({"filename": d["filename"], "text": d["text"], "score": float(sims[int(i)])})
-    return out
 
 # ------------- Public UI -------------
 
