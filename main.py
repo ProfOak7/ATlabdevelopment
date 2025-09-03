@@ -6,7 +6,7 @@ from bookings import load_bookings
 from slots import generate_slots
 from ui_components import show_student_signup, show_admin_view, show_availability_settings
 from tutor import init_tutor
-from ui_components import render_bio212_tutor_panel
+from ui_components import render_tutor_panel
     
 # --- Configuration ---
 st.set_page_config(page_title="Student Appointment Sign-Up", layout="wide")
@@ -43,13 +43,14 @@ elif selected_tab == "Availability Settings":
 
 elif selected_tab == "BIO 205 Tutor":
     # Initialize tutor knowledge (optional: path to folder with .md/.txt)
-    KNOWLEDGE_DIR = "./bio212_knowledge"
+    KNOWLEDGE_DIR = "./bio205_knowledge"
     init_tutor(KNOWLEDGE_DIR)
 
-    render_bio212_tutor_panel(
+    render_tutor_panel(
     course_hint="BIO 205: Human Anatomy",
     knowledge_enabled=bool(KNOWLEDGE_DIR)
     )
+
 
 
 
