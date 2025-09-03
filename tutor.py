@@ -273,10 +273,10 @@ def _answer_from_indexed_logistics(q: str) -> Optional[str]:
 
 def render_chat(
     course_hint: str = "BIO 205: Human Anatomy",
-    knowledge_enabled: bool = False,   # True if you passed a real knowledge_dir to init_tutor()
+    knowledge_enabled: bool = False,   # legacy; ignored now
     show_sidebar_controls: bool = True,
 ) -> None:
-    """Renders a chat panel. Call this from your page (main or a tab)."""
+    """Renders a chat panel. Deterministic logistics first; otherwise model-only."""
     api_key = os.getenv("OPENAI_API_KEY")
     client = OpenAI(api_key=api_key) if api_key else None
     if client is None:
@@ -285,20 +285,14 @@ def render_chat(
     if show_sidebar_controls:
         st.sidebar.subheader("BIO 205 Tutor")
         mode = st.sidebar.radio("Mode", ["Coach", "Explainer", "Quizzer", "Editor"], index=0)
-        use_retrieval = st.sidebar.checkbox("Use course knowledge", value=knowledge_enabled)
         temperature = st.sidebar.slider("Creativity", 0.0, 1.0, 0.4)
         if st.sidebar.button("🔄 Reindex knowledge"):
-            st.session_state.pop("bio205_index_ready", None)
-            st.session_state.pop("bio205_index", None)
-            st.session_state.pop("bio205_docs", None)
-            # Rebuild index and logistics
+            # Just reload logistics (no embeddings)
             if st.session_state.get("bio205_knowledge_dir"):
-                init_tutor(st.session_state["bio205_knowledge_dir"])
                 _load_and_index_logistics(st.session_state["bio205_knowledge_dir"])
             st.sidebar.success("Reindexed.")
-
     else:
-        mode, use_retrieval, temperature = "Coach", knowledge_enabled, 0.4
+        mode, temperature = "Coach", 0.4
 
     if "bio205_chat" not in st.session_state:
         st.session_state.bio205_chat = [{"role": "system", "content": SYSTEM_PROMPT}]
@@ -312,7 +306,7 @@ def render_chat(
             with st.chat_message("assistant"):
                 st.markdown(m["content"])
 
-    user_text = st.chat_input("Ask about BIO 205 (e.g., 'How do AV valves differ from semilunar valves?')")
+    user_text = st.chat_input("Ask about BIO 205 (e.g., 'When is Exam 1?' or 'What’s on Lab Exam 5?')")
     if not user_text:
         return
 
@@ -321,7 +315,7 @@ def render_chat(
     with st.chat_message("user"):
         st.markdown(user_text)
 
-    # --- Deterministic logistics answers FIRST ---
+    # 1) Deterministic logistics/objectives answers FIRST
     direct = _answer_from_indexed_logistics(user_text)
     if direct:
         with st.chat_message("assistant"):
@@ -329,29 +323,15 @@ def render_chat(
         st.session_state.bio205_chat.append({"role": "assistant", "content": direct})
         return
 
-    # Otherwise, proceed with model + (optional) retrieval
-    dev = f"Mode: {mode}. {_mode_instruction(mode)}\nCourse: {course_hint}"
+    # 2) Otherwise, normal model chat (no retrieval)
+    dev = f"Mode: {mode}. {_mode_instruction(mode)}\nCourse: {course_hint}\n" \
+          f"When answering logistics/objectives, prefer and cite 'bio205_logistics.md'."
     messages = [{"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "developer", "content": dev}]
 
     # Keep last ~8 turns for cost control
     short_hist = [m for m in st.session_state.bio205_chat if m["role"] in ("user", "assistant")][-8:]
     messages.extend(short_hist)
-
-    # Attach retrieval snippets if enabled
-    if client and use_retrieval:
-        hits = _retrieve(user_text, k=8)
-        # Prefer syllabus chunks
-        hits.sort(key=lambda h: 0 if "syllabus" in h["filename"].lower() else 1)
-        hits = hits[:4]
-        if hits:
-            kb = []
-            for h in hits:
-                kb.append(f"[Source: {h['filename']}]\n{h['text']}")
-            messages.append({
-                "role": "developer",
-                "content": "Use the following course knowledge and cite as [Source: <filename>]:\n\n" + "\n\n---\n\n".join(kb)
-            })
 
     with st.chat_message("assistant"):
         if client is None:
@@ -364,3 +344,5 @@ def render_chat(
             reply = f"Sorry, I ran into an error: `{e}`"
         st.markdown(reply)
         st.session_state.bio205_chat.append({"role": "assistant", "content": reply})
+
+
