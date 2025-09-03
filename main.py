@@ -52,15 +52,12 @@ elif selected_tab == "BIO 205 Tutor":
     # Parse the designated syllabus files and cache logistics
     _load_and_index_logistics(KNOWLEDGE_DIR)
 
-    # (Optional) let the user choose their section so logistics prefer the right syllabus
-    section = st.sidebar.selectbox("Section", ["70865 (SLO Wed)", "70868 (Paso Tues)"], index=0)
-    st.session_state["bio205_section"] = "70865" if "70865" in section else "70868"
-
     # Render the chat panel
     render_tutor_panel(
         course_hint="BIO 205: Human Anatomy",
         knowledge_enabled=True  # we have a knowledge dir
     )
+
 
 
 
