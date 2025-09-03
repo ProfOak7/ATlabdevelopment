@@ -41,9 +41,11 @@ def _is_logistics_file(path: pathlib.Path) -> bool:
 _DATE_PAT = re.compile(
     r"(?:\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|"
     r"Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d{1,2}"
-    r"(?:,\s*\d{4})?\b|\b\d{4}-\d{2}-\d{2}\b|\b\d{1,2}/\d{1,2}/\d{2,4}\b)"
+    r"(?:,\s*\d{4})?\b"                              # e.g., Sep 9 or Sep 9, 2025
+    r"|\b\d{1,2}/\d{1,2}(?:/\d{2,4})?\b"            # <-- allows 9/9 and 9/9/2025
+    r"|\b\d{4}-\d{2}-\d{2}\b)"                      # ISO 2025-09-09
 )
-_TIME_PAT = re.compile(r"\b\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?(?:\s*-\s*\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?)?\b")
+_TIME_PAT = re.compile(r"\b\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?(?:\s*-\s*\d{1,2}:\d{2}\s*(?:AM|PM|am|pm))?\b")
 _EXAM_PAT = re.compile(r"\b(Exam|Midterm|Test|Practical)\s*\d*\b", re.I)
 _OFFICE_PAT = re.compile(r"office\s*hours", re.I)
 _LATE_PAT = re.compile(r"\blate\s*policy|\blate\s+work", re.I)
@@ -54,8 +56,9 @@ _POLICY_PAT = re.compile(r"\bpolicy\b", re.I)
 def _extract_logistics_from_text(text: str, source_name: str) -> dict:
     """
     Parse syllabus-like text and pull structured logistics.
-    We capture 'Exam N' or 'Practical N' and attach the closest date/time
-    by scanning a small window of neighboring lines.
+    Captures 'Exam N' / 'Practical N' and attaches the closest date/time.
+    Handles tables flattened to text where a date is on its own line
+    (e.g., a line '9/9' followed by '***Lecture Exam 1***').
     """
     data = {
         "source": source_name,
@@ -67,38 +70,41 @@ def _extract_logistics_from_text(text: str, source_name: str) -> dict:
         "due_lines": []
     }
 
-    # Pre-split and keep original lines for context windows
+    # Keep originals for output, and a stripped copy for matching
     raw_lines = [ln.rstrip() for ln in text.splitlines()]
-    # Also keep a stripped version for searches
     lines = [ln.strip() for ln in raw_lines]
 
-    # Helper to find date/time in a small window around an index
-    def nearest_datetime(i: int, win: int = 2):
-        # Search current line first, then ±win lines
-        idxs = [i] + [j for k in range(1, win+1) for j in (i-k, i+k) if 0 <= j < len(lines)]
-        found_date, found_time = None, None
-        for j in idxs:
-            ln = lines[j]
-            if found_date is None:
-                m = _DATE_PAT.search(ln)
-                if m:
-                    found_date = m.group(0)
-            if found_time is None:
-                t = _TIME_PAT.search(ln)
-                if t:
-                    found_time = t.group(0)
-            if found_date and found_time:
-                break
-        return found_date, found_time
+    # Standalone date rows we should "carry forward" to the next content row
+    date_row_pat = re.compile(
+        r"^\s*(?:"
+        r"(?:\d{1,2}/\d{1,2}(?:/\d{2,4})?)"                 # 9/9 or 9/9/2025
+        r"|(?:\d{4}-\d{2}-\d{2})"                           # 2025-09-09
+        r"|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2}(?:,\s*\d{4})?"
+        r")\s*$", re.I
+    )
+    current_date = None
 
-    # Dedupe map: (kind, number) -> entry
-    seen = {}
+    def nearest_time(i: int, win: int = 2) -> Optional[str]:
+        idxs = [i] + [j for k in range(1, win+1) for j in (i-k, i+k) if 0 <= j < len(lines)]
+        for j in idxs:
+            t = _TIME_PAT.search(lines[j])
+            if t:
+                return t.group(0)
+        return None
+
+    # Dedupe map: (kind, number) -> best entry
+    seen: Dict[tuple, Dict[str, Any]] = {}
 
     for i, ln in enumerate(lines):
         if not ln:
             continue
 
-        # Office hours / policies (single-capture, first occurrence)
+        # If this line is just a date, remember it for the next row and move on
+        if date_row_pat.match(ln):
+            current_date = ln
+            continue
+
+        # Office hours / policies (first occurrence only)
         if _OFFICE_PAT.search(ln) and not data["office_hours"]:
             data["office_hours"] = raw_lines[i].strip()
         if (_LATE_PAT.search(ln) or ("late" in ln.lower() and _POLICY_PAT.search(ln))) and not data["late_policy"]:
@@ -114,34 +120,31 @@ def _extract_logistics_from_text(text: str, source_name: str) -> dict:
             continue
 
         label = m.group(0)  # e.g., "Exam 1", "Practical 1", "Exam"
-        # Try to pull an explicit number (if present)
         num_match = re.search(r"(?:Exam|Midterm|Test|Practical)\s*(\d+)", label, re.I)
         number = num_match.group(1) if num_match else None
 
-        # If the line has only the word 'exam' with no number, skip unless there is a date nearby
+        # If it's just "Exam" with no number AND no nearby date, skip (reduces noise)
         if not number and not _DATE_PAT.search(ln):
-            # look around for a following line that attaches to 'Exam' (e.g., date on next line)
-            date_near, _ = nearest_datetime(i, 1)
-            if not date_near:
-                continue  # too vague; ignore to avoid noise
+            if not current_date:
+                continue
 
-        # Find nearest date/time in a small window
-        date_str, time_str = nearest_datetime(i, win=2)
+        # Attach the carried-forward date (if any) and look for a nearby time
+        date_str = current_date
+        time_str = nearest_time(i, win=2)
 
-        key_kind = "practical" if "practical" in label.lower() else "exam"
-        dedupe_key = (key_kind, number or raw_lines[i].strip().lower())
-
-        # Build a tidy name like "Exam 1" or "Practical 1"
-        nice_name = (("Practical " if key_kind == "practical" else "Exam ") + (number if number else "")).strip()
+        kind = "practical" if "practical" in label.lower() else "exam"
+        dedupe_key = (kind, number or raw_lines[i].strip().lower())
+        nice_name = (("Practical " if kind == "practical" else "Exam ") + (number if number else "")).strip()
 
         entry = {
-            "name": nice_name if number or "practical" in label.lower() else label.strip(),
+            "name": nice_name if number or kind == "practical" else label.strip(),
             "number": number,
             "date": date_str,
             "time": time_str,
             "line": raw_lines[i].strip()
         }
-        # Keep the first complete entry per dedupe_key, prefer ones with a date
+
+        # Prefer entries that actually have a date
         if dedupe_key not in seen or (date_str and not seen[dedupe_key].get("date")):
             seen[dedupe_key] = entry
 
@@ -152,7 +155,7 @@ def _extract_logistics_from_text(text: str, source_name: str) -> dict:
         else:
             data["exams"].append(entry)
 
-    # Sort by number when available
+    # Sort numerically when possible (Exam 1, Exam 2, …)
     def _num_key(e):
         try:
             return int(e["number"]) if e.get("number") else 999
