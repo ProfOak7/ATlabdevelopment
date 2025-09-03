@@ -25,7 +25,11 @@ slo_slots_by_day, ncc_slots_by_day = generate_slots()
 
 # --- Sidebar Navigation ---
 st.sidebar.title("Navigation")
-selected_tab = st.sidebar.radio("Go to:", ["Sign-Up", "Admin View", "Availability Settings"])
+selected_tab = st.sidebar.radio(
+    "Go to:", 
+    ["Sign-Up", "Admin View", "Availability Settings", "BIO 212 Tutor"]
+)
+
 
 # --- Route to Appropriate View ---
 if selected_tab == "Sign-Up":
@@ -36,6 +40,18 @@ elif selected_tab == "Admin View":
 
 elif selected_tab == "Availability Settings":
     show_availability_settings(AVAILABILITY_PASSCODE)
+
+elif selected_tab == "BIO 212 Tutor":
+    # Initialize tutor knowledge (optional: path to folder with .md/.txt)
+    KNOWLEDGE_DIR = "./bio212_knowledge"
+    init_tutor(KNOWLEDGE_DIR)
+
+    render_bio212_tutor_panel(
+        course_hint="BIO 212: Human Biology",
+        knowledge_enabled=bool(KNOWLEDGE_DIR)
+    )
+
+
 
 
 
