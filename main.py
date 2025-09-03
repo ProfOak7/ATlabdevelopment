@@ -5,6 +5,7 @@ import pytz
 from bookings import load_bookings
 from slots import generate_slots
 from ui_components import show_student_signup, show_admin_view, show_availability_settings
+from tutor import init_tutor
     
 # --- Configuration ---
 st.set_page_config(page_title="Student Appointment Sign-Up", layout="wide")
@@ -34,6 +35,7 @@ elif selected_tab == "Admin View":
 
 elif selected_tab == "Availability Settings":
     show_availability_settings(AVAILABILITY_PASSCODE)
+
 
 
 
