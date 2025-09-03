@@ -358,16 +358,7 @@ def render_chat(
         if "bio205_knowledge_dir" not in st.session_state:
             st.session_state.bio205_knowledge_dir = _DEFAULT_KNOWLEDGE_DIR
 
-        # Optional file uploader for quick testing
-        up = st.sidebar.file_uploader("Upload a .md/.txt logistics file", type=["md", "txt"], accept_multiple_files=True)
-        if up:
-            tmpdir = pathlib.Path(st.session_state.bio205_knowledge_dir)
-            tmpdir.mkdir(parents=True, exist_ok=True)
-            for f in up:
-                dest = tmpdir / f.name
-                dest.write_bytes(f.read())
-            st.sidebar.success(f"Uploaded {len(up)} file(s) → {tmpdir}")
-
+        
         if st.sidebar.button("🔄 Reindex logistics"):
             _load_and_index_logistics(st.session_state["bio205_knowledge_dir"])
             cnt = 0
