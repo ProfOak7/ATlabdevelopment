@@ -71,6 +71,26 @@ _CRN_LINE_PAT = re.compile(r"CRN\s+(\d{5})(?:\s*[—\-]\s*([^\n]+)|\s*\(([^)]+)\
 
 
 # ---------------------------- Helpers ----------------------------------------
+def _ensure_logistics_loaded():
+    """Idempotently load logistics once, supporting secrets-based source."""
+    # 1) If we already loaded, bail.
+    if st.session_state.get("bio205_logistics"):
+        return
+
+    # 2) Pick a knowledge dir (existing session value or default).
+    knowledge_dir = st.session_state.get("bio205_knowledge_dir", _DEFAULT_KNOWLEDGE_DIR)
+    path = pathlib.Path(knowledge_dir)
+    path.mkdir(parents=True, exist_ok=True)
+
+    # 3) If a secrets-based logistics file exists, write it once to disk.
+    #    e.g., put your full markdown into st.secrets["BIO205_LOGISTICS_MD"]
+    secret_key = "BIO205_LOGISTICS_MD"
+    if secret_key in st.secrets and not (path / "bio205_logistics.md").exists():
+        (path / "bio205_logistics.md").write_text(st.secrets[secret_key], encoding="utf-8")
+
+    # 4) Index.
+    _load_and_index_logistics(str(path))
+    
 def _is_logistics_file(path: pathlib.Path) -> bool:
     """Return True if the file should be parsed for logistics."""
     if _LOGISTICS_FILELIST:
