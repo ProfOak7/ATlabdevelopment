@@ -39,13 +39,24 @@ def _is_logistics_file(path: pathlib.Path) -> bool:
     return "syllabus" in path.name.lower()
 
 _DATE_PAT = re.compile(
-    r"(?:\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|"
-    r"Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d{1,2}"
-    r"(?:,\s*\d{4})?\b"                              # e.g., Sep 9 or Sep 9, 2025
-    r"|\b\d{1,2}/\d{1,2}(?:/\d{2,4})?\b"            # <-- allows 9/9 and 9/9/2025
-    r"|\b\d{4}-\d{2}-\d{2}\b)"                      # ISO 2025-09-09
+    r"(?:\b(?:Mon|Tue|Tues|Wed|Thu|Thur|Fri|Sat|Sun)[a-z]*\s+)?"  # optional weekday
+    r"(?:"
+    r"(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|"
+    r"Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d{1,2}(?:,\s*\d{4})?"
+    r"|\d{1,2}/\d{1,2}(?:/\d{2,4})?"
+    r"|\d{4}-\d{2}-\d{2}"
+    r")\b",
+    re.I
 )
-_TIME_PAT = re.compile(r"\b\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?(?:\s*-\s*\d{1,2}:\d{2}\s*(?:AM|PM|am|pm))?\b")
+_TIME_PAT = re.compile(
+    r"""
+    \b
+    \d{1,2}(?::\d{2})?\s*(?:[ap]\.?m\.?)?      # 6 or 6:00 or 6 pm
+    (?:\s*[-–]\s*\d{1,2}(?::\d{2})?\s*(?:[ap]\.?m\.?)?)?  # optional range: 6–8 pm
+    \b
+    """,
+    re.IGNORECASE | re.VERBOSE
+)
 _EXAM_PAT = re.compile(r"\b(Exam|Midterm|Test|Practical)\s*\d*\b", re.I)
 _OFFICE_PAT = re.compile(r"office\s*hours", re.I)
 _LATE_PAT = re.compile(r"\blate\s*policy|\blate\s+work", re.I)
