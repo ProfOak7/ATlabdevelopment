@@ -5,7 +5,6 @@ import pytz
 from bookings import load_bookings
 from slots import generate_slots
 from ui_components import show_student_signup, show_admin_view, show_availability_settings
-from tutor import init_tutor
 from tutor import _load_and_index_logistics
 from ui_components import render_tutor_panel
     
@@ -57,6 +56,7 @@ elif selected_tab == "BIO 205 Tutor":
         course_hint="BIO 205: Human Anatomy",
         knowledge_enabled=True  # we have a knowledge dir
     )
+
 
 
 
