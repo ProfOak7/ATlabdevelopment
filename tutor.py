@@ -1,12 +1,13 @@
-# tutor.py — BIO 205 (Human Anatomy) — Fresh Build (patched)
+# tutor.py — BIO 205 (Human Anatomy) — Fresh Build
 # Streamlit chat assistant with deterministic logistics answers from syllabus-like files
 # -------------------------------------------------------------------------------
 # Usage:
 #   streamlit run tutor.py
 #
 # Sidebar tips:
-#   • Choose your section (CRN 70868 or 70865)
+#   • Set a knowledge folder path (defaults to env BIO205_KNOWLEDGE_DIR or ./knowledge)
 #   • Click “🔄 Reindex logistics” after changing files or uploading
+#   • (Optional) Set a preferred section string (e.g., a CRN like 70865) to prioritize
 
 import os
 import re
@@ -63,8 +64,7 @@ _EXAM_PAT = re.compile(r"\b(Exam|Midterm|Test|Practical)\s*\d*\b", re.I)
 # Misc patterns
 _OFFICE_PAT = re.compile(r"office\s*hours", re.I)
 _LATE_PAT = re.compile(r"\blate\s*policy|\blate\s+work", re.I)
-# FIX: ensure word boundaries around quiz/quizzes
-_QUIZ_PAT = re.compile(r"\b(?:quiz|quizzes)\b", re.I)
+_QUIZ_PAT = re.compile(r"\bquiz|quizzes\b", re.I)
 _DUE_PAT = re.compile(r"\bdue\b", re.I)
 _POLICY_PAT = re.compile(r"\bpolicy\b", re.I)
 
@@ -73,35 +73,13 @@ _CRN_LINE_PAT = re.compile(r"CRN\s+(\d{5})(?:\s*[—\-]\s*([^\n]+)|\s*\(([^)]+)\
 
 
 # ---------------------------- Helpers ----------------------------------------
-def _ensure_logistics_loaded():
-    """Idempotently load logistics once, supporting secrets-based source."""
-    # 1) If we already loaded, bail.
-    if st.session_state.get("bio205_logistics"):
-        return
-
-    # 2) Pick a knowledge dir (existing session value or default).
-    knowledge_dir = st.session_state.get("bio205_knowledge_dir", _DEFAULT_KNOWLEDGE_DIR)
-    path = pathlib.Path(knowledge_dir)
-    path.mkdir(parents=True, exist_ok=True)
-
-    # 3) If a secrets-based logistics file exists, write it once to disk.
-    #    e.g., put your full markdown into st.secrets["BIO205_LOGISTICS_MD"]
-    secret_key = "BIO205_LOGISTICS_MD"
-    if secret_key in st.secrets and not (path / "bio205_logistics.md").exists():
-        (path / "bio205_logistics.md").write_text(st.secrets[secret_key], encoding="utf-8")
-
-    # 4) Index.
-    _load_and_index_logistics(str(path))
-
-
 def _is_logistics_file(path: pathlib.Path) -> bool:
     """Return True if the file should be parsed for logistics."""
     if _LOGISTICS_FILELIST:
         wanted = {n.strip().lower() for n in _LOGISTICS_FILELIST.split(";") if n.strip()}
         return path.name.lower() in wanted
     name = path.name.lower()
-    # Include calendar as a common name for schedules
-    return any(k in name for k in ("syllabus", "logistics", "schedule", "calendar")) and path.suffix.lower() in {".txt", ".md"}
+    return any(k in name for k in ("syllabus", "logistics", "schedule")) and path.suffix.lower() in {".txt", ".md"}
 
 
 def _extract_logistics_from_text(text: str, source_name: str) -> dict:
@@ -109,7 +87,6 @@ def _extract_logistics_from_text(text: str, source_name: str) -> dict:
     Captures 'Exam N' / 'Practical N' and attaches the closest date/time.
     Handles tables flattened to text where a date is on its own line.
     Also carries forward CRN/section context for each entry.
-    Additionally attempts to capture a simple 'Lab Objectives' block.
     """
     data = {
         "source": source_name,
@@ -119,7 +96,6 @@ def _extract_logistics_from_text(text: str, source_name: str) -> dict:
         "late_policy": None,
         "quizzes_policy": None,
         "due_lines": [],
-        "lab_objectives": [],
     }
 
     raw_lines = [ln.rstrip("\n") for ln in text.splitlines()]
@@ -155,11 +131,8 @@ def _extract_logistics_from_text(text: str, source_name: str) -> dict:
     # Dedupe map: key -> best entry
     seen: Dict[tuple, Dict[str, Any]] = {}
 
-    i = 0
-    while i < len(lines):
-        ln = lines[i]
+    for i, ln in enumerate(lines):
         if not ln:
-            i += 1
             continue
 
         # Track CRN/section headers
@@ -168,25 +141,11 @@ def _extract_logistics_from_text(text: str, source_name: str) -> dict:
             current_crn = mcrn.group(1)
             sec = mcrn.group(2) or mcrn.group(3)
             current_section = (sec or "").strip() or None
-            i += 1
             continue
 
         # Standalone date row to carry forward
         if date_row_pat.match(ln):
             current_date = raw_lines[i].strip()
-            i += 1
-            continue
-
-        # Lab Objectives block (very lightweight): header + bullet/paragraph lines until blank or next header
-        if re.match(r"^#+\s*Lab Objectives\b", ln, re.I) or re.match(r"^\s*Lab Objectives\s*[:\-]?\s*$", ln, re.I):
-            block = []
-            j = i + 1
-            while j < len(lines) and not re.match(r"^#+\s*\w+", lines[j]) and lines[j].strip():
-                block.append(raw_lines[j].strip())
-                j += 1
-            if block:
-                data["lab_objectives"].extend(block)
-            i = j
             continue
 
         # Office hours / policies (first occurrence only)
@@ -207,55 +166,46 @@ def _extract_logistics_from_text(text: str, source_name: str) -> dict:
 
         # Exams / Practicals
         m = _EXAM_PAT.search(ln)
-        if m:
-            label = m.group(0)  # e.g., "Exam 1", "Practical 1", "Exam"
-            num_match = re.search(r"(?:Exam|Midterm|Test|Practical)\s*(\d+)", label, re.I)
-            number = num_match.group(1) if num_match else None
+        if not m:
+            continue
 
-            # If just "Exam" with no number AND no nearby date, skip (reduces noise)
-            if not number and not _DATE_PAT.search(ln):
-                if not current_date:
-                    i += 1
-                    continue
+        label = m.group(0)  # e.g., "Exam 1", "Practical 1", "Exam"
+        num_match = re.search(r"(?:Exam|Midterm|Test|Practical)\s*(\d+)", label, re.I)
+        number = num_match.group(1) if num_match else None
 
-            # Prefer a carried-forward date; otherwise look for an inline date on this line
-            date_str = current_date or (_DATE_PAT.search(ln).group(0) if _DATE_PAT.search(ln) else None)
-            time_str = nearest_time(i, win=3)
-            if current_date and date_str == current_date:
-                current_date = None  # consume once when used
+        # If just "Exam" with no number AND no nearby date, skip (reduces noise)
+        if not number and not _DATE_PAT.search(ln):
+            if not current_date:
+                continue
 
-            kind = "practical" if "practical" in label.lower() else "exam"
-            # Preserve token if present
-            base_token = (
-                "Practical" if kind == "practical" else (
-                    "Midterm" if "midterm" in label.lower() else (
-                        "Test" if "test" in label.lower() else "Exam"
-                    )
-                )
-            )
-            nice_name = ((base_token + " " + number) if number else base_token).strip()
+        # Prefer a carried-forward date; otherwise look for an inline date on this line
+        date_str = current_date or (_DATE_PAT.search(ln).group(0) if _DATE_PAT.search(ln) else None)
+        time_str = nearest_time(i, win=3)
+        if current_date and date_str == current_date:
+            current_date = None  # consume once
 
-            entry = {
-                "name": nice_name if number or kind == "practical" else label.strip(),
-                "number": number,
-                "date": date_str,
-                "time": time_str,
-                "line": raw_lines[i].strip(),
-                "crn": current_crn,
-                "section": current_section,
-                "kind": kind,
-            }
+        kind = "practical" if "practical" in label.lower() else "exam"
+        nice_name = (("Practical " if kind == "practical" else "Exam ") + (number if number else "")).strip()
 
-            # Key includes kind, number (if any), and date or full line to avoid collisions across sections
-            if number:
-                key = (kind, number, (date_str or raw_lines[i].strip().lower()))
-            else:
-                key = (kind, raw_lines[i].strip().lower())
+        entry = {
+            "name": nice_name if number or kind == "practical" else label.strip(),
+            "number": number,
+            "date": date_str,
+            "time": time_str,
+            "line": raw_lines[i].strip(),
+            "crn": current_crn,
+            "section": current_section,
+            "kind": kind,
+        }
 
-            if key not in seen:
-                seen[key] = entry
+        # Key includes kind, number (if any), and date or full line to avoid collisions across sections
+        if number:
+            key = (kind, number, (date_str or raw_lines[i].strip().lower()))
+        else:
+            key = (kind, raw_lines[i].strip().lower())
 
-        i += 1
+        if key not in seen:
+            seen[key] = entry
 
     # Move entries into data lists
     for e in seen.values():
@@ -293,7 +243,7 @@ def _load_and_index_logistics(knowledge_dir: Optional[str]) -> None:
         # Prefer a selected section/CRN if user stored one
         sec = st.session_state.get("bio205_section")
         if sec:
-            collected.sort(key=lambda b: 0 if sec and (sec in (b.get("source", ""))) else 1)
+            collected.sort(key=lambda b: 0 if sec and sec in (b.get("source", "")) else 1)
         st.session_state.bio205_logistics = collected
 
 
@@ -306,15 +256,12 @@ def _answer_from_indexed_logistics(q: str) -> Optional[str]:
     ql = q.lower().strip()
 
     # Prefer selected section/CRN substring in source or entries
-    sec_pref = st.session_state.get("bio205_section")  # store just the CRN value like "70868" or "70865"
+    sec_pref = st.session_state.get("bio205_section")
     if sec_pref:
+        # Stable ordering: blocks that contain the section string first
         def block_score(block: dict) -> int:
-            # score 0 if any entry in this block has matching CRN OR source contains the CRN
             if sec_pref and sec_pref in block.get("source", ""):
                 return 0
-            for e in block.get("exams", []) + block.get("lab_practicals", []):
-                if e.get("crn") == sec_pref:
-                    return 0
             return 1
         info = sorted(info, key=block_score)
 
@@ -331,11 +278,12 @@ def _answer_from_indexed_logistics(q: str) -> Optional[str]:
                 label = f"{label} (CRN {entry['crn']}, {entry['section']})"
             else:
                 label = f"{label} (CRN {entry['crn']})"
-        dt_bits = []
-        if entry.get("date"): dt_bits.append(entry["date"])
-        if entry.get("time"): dt_bits.append(entry["time"])
-        dt = " — " + " · ".join(dt_bits) if dt_bits else ""
-        return f"- {label}{dt}  \n[Source: {src}]"
+        bits = [label]
+        if entry.get("date"):
+            bits.append(entry["date"])
+        if entry.get("time"):
+            bits.append(entry["time"])
+        return "- " + " ".join(bits) + f"  \n[Source: {src}]"
 
     # Exams/Practicals
     if any(k in ql for k in ["exam", "midterm", "test", "practical"]):
@@ -372,15 +320,6 @@ def _answer_from_indexed_logistics(q: str) -> Optional[str]:
             if block.get("quizzes_policy"):
                 return f"**Quizzes**  \n{block['quizzes_policy']}  \n[Source: {block['source']}]"
 
-    # Lab objectives
-    if ("objective" in ql and "lab" in ql) or ("lab objectives" in ql):
-        outs = []
-        for block in info:
-            if block.get("lab_objectives"):
-                outs.append("**Lab Objectives**  \n" + "\n".join(f"- {x}" for x in block["lab_objectives"]) + f"  \n[Source: {block['source']}]")
-        if outs:
-            return "\n\n".join(outs)
-
     # Generic due date lines
     if "due" in ql:
         lines = []
@@ -397,8 +336,10 @@ def _answer_from_indexed_logistics(q: str) -> Optional[str]:
 
 def _mode_instruction(mode: str) -> str:
     return {
+        "Coach":    "Act as a Socratic coach. Ask brief, targeted questions; reveal hints progressively; check understanding.",
         "Explainer":"Explain clearly with analogies and a quick misconception check tied to everyday life.",
         "Quizzer":  "Ask 2–4 short questions, give immediate feedback, then a brief recap.",
+        "Editor":   "Give formative, rubric-aligned feedback on short writing. Suggest 2–3 concrete edits.",
     }.get(mode, "Explain clearly and check understanding briefly.")
 
 
@@ -407,10 +348,6 @@ def render_chat(
     show_sidebar_controls: bool = True,
 ) -> None:
     """Renders a chat panel. Deterministic logistics first; otherwise model-only."""
-
-    # 🔑 Make sure syllabus/logistics are indexed before anything else
-    _ensure_logistics_loaded()
-
     api_key = os.getenv("OPENAI_API_KEY")
     client = OpenAI(api_key=api_key) if api_key else None
     if client is None:
@@ -418,15 +355,25 @@ def render_chat(
 
     if show_sidebar_controls:
         st.sidebar.subheader("BIO 205 Tutor")
-        mode = st.sidebar.radio("Mode", [ "Explainer", "Quizzer"], index=0)
+        mode = st.sidebar.radio("Mode", ["Coach", "Explainer", "Quizzer", "Editor"], index=0)
         temperature = st.sidebar.slider("Creativity", 0.0, 1.0, 0.4)
 
         # Knowledge folder controls
         if "bio205_knowledge_dir" not in st.session_state:
             st.session_state.bio205_knowledge_dir = _DEFAULT_KNOWLEDGE_DIR
-        st.session_state.bio205_knowledge_dir = st.sidebar.text_input(
-            "Knowledge folder", st.session_state["bio205_knowledge_dir"]
-        )
+
+        st.sidebar.text_input("Knowledge folder path", key="bio205_knowledge_dir")
+        st.sidebar.text_input("Preferred section/CRN keyword (optional)", key="bio205_section")
+
+        # Optional file uploader for quick testing
+        up = st.sidebar.file_uploader("Upload a .md/.txt logistics file", type=["md", "txt"], accept_multiple_files=True)
+        if up:
+            tmpdir = pathlib.Path(st.session_state.bio205_knowledge_dir)
+            tmpdir.mkdir(parents=True, exist_ok=True)
+            for f in up:
+                dest = tmpdir / f.name
+                dest.write_bytes(f.read())
+            st.sidebar.success(f"Uploaded {len(up)} file(s) → {tmpdir}")
 
         if st.sidebar.button("🔄 Reindex logistics"):
             _load_and_index_logistics(st.session_state["bio205_knowledge_dir"])
@@ -434,22 +381,6 @@ def render_chat(
             if st.session_state.get("bio205_logistics"):
                 cnt = sum(len(b.get("exams", [])) + len(b.get("lab_practicals", [])) for b in st.session_state["bio205_logistics"])
             st.sidebar.success(f"Reindexed. Found {cnt} exam/practical entries.")
-
-        # --- Section/CRN chooser (fixed options per request) ---
-        section_display_to_value = {
-            "All sections": None,
-            "70868 (Tues Paso)": "70868",
-            "70865 (Wed SLO)": "70865",
-        }
-        display_options = list(section_display_to_value.keys())
-        current_display = "All sections"
-        if st.session_state.get("bio205_section") in ("70868", "70865"):
-            # Map back to display label
-            inv = {v: k for k, v in section_display_to_value.items() if v}
-            current_display = inv.get(st.session_state.get("bio205_section"), "All sections")
-        chosen_display = st.sidebar.selectbox("Prefer section/CRN", display_options, index=display_options.index(current_display))
-        st.session_state.bio205_section = section_display_to_value[chosen_display]
-
     else:
         mode, temperature = "Coach", 0.4
 
@@ -484,4 +415,40 @@ def render_chat(
 
     # 2) Otherwise, normal model chat (no retrieval)
     dev = (
-        f"Mode: {mode}. {_mode_instruction(m
+        f"Mode: {mode}. {_mode_instruction(mode)}\n"
+        f"Course: {course_hint}\n"
+        f"When answering logistics/objectives, prefer and cite 'bio205_logistics.md'."
+    )
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "developer", "content": dev},
+    ]
+
+    # Keep last ~8 turns for cost control
+    short_hist = [m for m in st.session_state.bio205_chat if m["role"] in ("user", "assistant")][-8:]
+    messages.extend(short_hist)
+
+    with st.chat_message("assistant"):
+        if client is None:
+            st.markdown("_Demo mode: set OPENAI_API_KEY for live answers._")
+            return
+        try:
+            resp = client.responses.create(model=DEFAULT_MODEL, input=messages, temperature=temperature)
+            reply = resp.output_text
+        except Exception as e:
+            reply = f"Sorry, I ran into an error: `{e}`"
+        st.markdown(reply)
+        st.session_state.bio205_chat.append({"role": "assistant", "content": reply})
+
+
+# --------------------------- Entrypoint (Streamlit) ---------------------------
+if __name__ == "__main__":
+    st.set_page_config(page_title="BIO 205 Tutor", page_icon="🧠", layout="wide")
+    st.title("BIO 205 Tutor — Human Anatomy")
+
+    # Auto-load knowledge on first run
+    if st.session_state.get("_bootstrapped") is None:
+        _load_and_index_logistics(_DEFAULT_KNOWLEDGE_DIR)
+        st.session_state._bootstrapped = True
+
+    render_chat()
