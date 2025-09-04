@@ -1,61 +1,60 @@
-# main.py — robust loader with lazy imports to avoid import-time KeyErrors
+# main.py — slim launcher for Student Sign‑Up + Admin + BIO 205 Tutor
+# Run with:  streamlit run main.py
+
 import streamlit as st
-from tutor import render_chat  # safe to import upfront
+from datetime import datetime
+import pytz
 
-st.set_page_config(page_title="Student Appointment Sign-Up", layout="wide")
+# Local modules for the sign‑up app
+from bookings import load_bookings
+from slots import generate_slots
+from ui_components import (
+    show_student_signup,
+    show_admin_view,
+)
 
-# --- Sidebar Navigation ---
+# Import the new Tutor pieces
+from tutor import render_chat as render_tutor_chat, _load_and_index_logistics, _DEFAULT_KNOWLEDGE_DIR
+
+# ---------------------- App Config ----------------------
+st.set_page_config(page_title="Cuesta Lab | Sign‑Up + Tutor", layout="wide")
+
+# ---------------------- Secrets -------------------------
+ADMIN_PASSCODE = st.secrets["ADMIN_PASSCODE"]
+AVAILABILITY_PASSCODE = st.secrets.get("AVAILABILITY_PASSCODE")  # optional if not used here
+
+# ---------------------- Timezone ------------------------
+pacific = pytz.timezone("US/Pacific")
+now = datetime.now(pacific)
+
+# ----------------- Data for Sign‑Up/Admin ----------------
+bookings_df = load_bookings()
+slo_slots_by_day, ncc_slots_by_day = generate_slots()
+
+# --------------------- Navigation -----------------------
 st.sidebar.title("Navigation")
-selected_tab = st.sidebar.radio("Go to:", ["Sign-Up", "BIO 205 Tutor", "Admin View"], index=0)
+selected_tab = st.sidebar.radio("Go to:", ["Sign‑Up", "Admin View", "BIO 205 Tutor"], index=0)
 
-# --- BIO 205 Tutor (safe; self-bootstraps) ---
-if selected_tab == "BIO 205 Tutor":
-    st.title("BIO 205 Tutor — Human Anatomy")
-    render_chat()
+# ---------------------- Routing -------------------------
+if selected_tab == "Sign‑Up":
+    st.title("Student Appointment Sign‑Up")
+    show_student_signup(bookings_df, slo_slots_by_day, ncc_slots_by_day, now)
 
-# --- Sign-Up (lazy imports; avoid import-time secrets crash) ---
-elif selected_tab == "Sign-Up":
-    st.title("Student Appointment Sign-Up")
-    try:
-        from datetime import datetime
-        import pytz
-        from bookings import load_bookings
-        from slots import generate_slots
-        from ui_components import show_student_signup
-
-        pacific = pytz.timezone("US/Pacific")
-        now = datetime.now(pacific)
-
-        bookings_df = load_bookings()
-        slo_slots_by_day, ncc_slots_by_day = generate_slots()
-
-        show_student_signup(bookings_df, slo_slots_by_day, ncc_slots_by_day, now)
-    except Exception as e:
-        st.error("Could not load the Sign-Up tab due to an error in one of the modules.")
-        st.exception(e)
-        st.info("Tip: this often happens if a module reads st.secrets['MISSING_KEY'] at import time.")
-
-# --- Admin View (lazy imports; safer secrets access) ---
 elif selected_tab == "Admin View":
     st.title("Admin View")
-    try:
-        from bookings import load_bookings
-        from slots import generate_slots
-        from ui_components import show_admin_view
+    show_admin_view(bookings_df, slo_slots_by_day, ncc_slots_by_day, ADMIN_PASSCODE)
 
-        # Use .get() so a missing secret doesn’t crash the app here
-        ADMIN_PASSCODE = st.secrets.get("ADMIN_PASSCODE")
-        if not ADMIN_PASSCODE:
-            st.error("Missing secret: ADMIN_PASSCODE")
-        else:
-            bookings_df = load_bookings()
-            slo_slots_by_day, ncc_slots_by_day = generate_slots()
-            show_admin_view(bookings_df, slo_slots_by_day, ncc_slots_by_day, ADMIN_PASSCODE)
-    except Exception as e:
-        st.error("Could not load the Admin View due to an error in one of the modules.")
-        st.exception(e)
-        st.info("Tip: check your modules for st.secrets[...] lookups at import time.")
+elif selected_tab == "BIO 205 Tutor":
+    st.title("BIO 205 Tutor — Human Anatomy")
 
+    # Initialize the Tutor's knowledge path once per session.
+    if "bio205_knowledge_dir" not in st.session_state:
+        st.session_state["bio205_knowledge_dir"] = _DEFAULT_KNOWLEDGE_DIR
 
+    # Index logistics the first time we land on this tab (safe to call multiple times)
+    if not st.session_state.get("_bio205_indexed_once"):
+        _load_and_index_logistics(st.session_state["bio205_knowledge_dir"])
+        st.session_state["_bio205_indexed_once"] = True
 
-
+    # Render the Tutor chat UI (self‑contained; sidebar there has a Reindex button)
+    render_tutor_chat()
