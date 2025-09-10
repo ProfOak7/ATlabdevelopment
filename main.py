@@ -14,7 +14,7 @@ from ui_components import (
 )
 
 # Import the new Tutor pieces
-from tutor import render_chat as render_tutor_chat, _load_and_index_logistics, _DEFAULT_KNOWLEDGE_DIR
+from tutor import render_chat  # import here only
 
 # ---------------------- App Config ----------------------
 st.set_page_config(page_title="Cuesta Lab | Sign‑Up + Tutor", layout="wide")
@@ -58,3 +58,4 @@ elif selected_tab == "BIO 205 Tutor":
 
     # Render the Tutor chat UI (self‑contained; sidebar there has a Reindex button)
     render_tutor_chat()
+
