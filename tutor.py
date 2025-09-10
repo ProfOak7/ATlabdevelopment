@@ -1,8 +1,9 @@
-# tutor.py — BIO 205 (Human Anatomy) — JSON‑Only, Deterministic
+# tutor.py — BIO 205 (Human Anatomy) — JSON-Only, Deterministic
 # Streamlit chat assistant that answers logistics from a *structured JSON* in secrets,
 # then falls back to the model for everything else. No file I/O, no regex parsing.
 # -------------------------------------------------------------------------------
 import os
+import json
 from typing import Dict, Any, List, Optional
 
 import streamlit as st
@@ -31,18 +32,29 @@ def _load_logistics_json() -> Dict[str, Any]:
             "quizzes_policy": None,
             "due_lines": [],
         }
-    # `st.secrets` may give a dict already; otherwise it's a string containing JSON
     if isinstance(data, str):
         try:
-            import json
             return json.loads(data)
         except Exception:
-            return {"exams": [], "lab_practicals": [], "office_hours": None, "late_policy": None, "quizzes_policy": None, "due_lines": []}
+            return {
+                "exams": [],
+                "lab_practicals": [],
+                "office_hours": None,
+                "late_policy": None,
+                "quizzes_policy": None,
+                "due_lines": [],
+            }
     if isinstance(data, dict):
         return data
     # Fallback
-    return {"exams": [], "lab_practicals": [], "office_hours": None, "late_policy": None, "quizzes_policy": None, "due_lines": []}
-
+    return {
+        "exams": [],
+        "lab_practicals": [],
+        "office_hours": None,
+        "late_policy": None,
+        "quizzes_policy": None,
+        "due_lines": [],
+    }
 
 # ---------------------- Deterministic answering -------------------------------
 
@@ -64,8 +76,7 @@ def _answer_from_json(q: str, kb: Dict[str, Any]) -> Optional[str]:
             bits.append(entry["date"])
         if entry.get("time"):
             bits.append(entry["time"])
-        return "- " + " ".join(bits) + f"  
-[Source: {src}]"
+        return "- " + " ".join(bits) + f"\n[Source: {src}]"
 
     # detect number tokens like "1" in "Exam 1"
     num: Optional[str] = None
@@ -90,48 +101,40 @@ def _answer_from_json(q: str, kb: Dict[str, Any]) -> Optional[str]:
                 continue
             lines.append(fmt(e))
         if lines:
-            title = f"**{('Exam ' + num) if (num and 'final' not in ql) else ('Final Exam' if 'final' in ql else 'Exams/Practicals')}**"
-            return title + "
-" + "
-".join(lines)
+            title = (
+                f"**Exam {num}**"
+                if (num and "final" not in ql)
+                else ("**Final Exam**" if "final" in ql else "**Exams/Practicals**")
+            )
+            return title + "\n" + "\n".join(lines)
 
     # --- Office hours ---
     if "office hour" in ql or "office-hours" in ql or ql == "office hours":
         oh = kb.get("office_hours")
         if oh:
-            return f"**Office Hours**  
-{oh}  
-[Source: {src}]"
+            return f"**Office Hours**\n{oh}\n[Source: {src}]"
 
     # --- Late policy ---
     if "late policy" in ql or "late work" in ql or ("late" in ql and "policy" in ql):
         lp = kb.get("late_policy")
         if lp:
-            return f"**Late Policy**  
-{lp}  
-[Source: {src}]"
+            return f"**Late Policy**\n{lp}\n[Source: {src}]"
 
     # --- Quizzes policy ---
     if "quiz" in ql or "quizzes" in ql:
         qp = kb.get("quizzes_policy")
         if qp:
-            return f"**Quizzes**  
-{qp}  
-[Source: {src}]"
+            return f"**Quizzes**\n{qp}\n[Source: {src}]"
 
     # --- Generic due lines ---
     if "due" in ql:
         lines2: List[str] = []
         for ln in kb.get("due_lines", []) or []:
-            lines2.append(f"- {ln}  
-[Source: {src}]")
+            lines2.append(f"- {ln}\n[Source: {src}]")
         if lines2:
-            return "**Due items found**
-" + "
-".join(lines2)
+            return "**Due items found**\n" + "\n".join(lines2)
 
     return None
-
 
 # ----------------------------- UI (Streamlit) --------------------------------
 
@@ -140,7 +143,6 @@ def _mode_instruction(mode: str) -> str:
         "Explainer": "Explain clearly with analogies and a quick misconception check tied to everyday life.",
         "Quizzer": "Ask 2–4 short questions, give immediate feedback, then a brief recap.",
     }.get(mode, "Explain clearly and check understanding briefly.")
-
 
 def render_chat(
     course_hint: str = "BIO 205: Human Anatomy",
@@ -194,10 +196,8 @@ def render_chat(
 
     # 2) Otherwise, model fallback
     dev = (
-        f"Mode: {mode}. {_mode_instruction(mode)}
-"
-        f"Course: {course_hint}
-"
+        f"Mode: {mode}. {_mode_instruction(mode)}\n"
+        f"Course: {course_hint}\n"
         f"When answering logistics/objectives, prefer and cite 'bio205_logistics.json'."
     )
     messages = [
@@ -219,7 +219,6 @@ def render_chat(
             reply = f"Sorry, I ran into an error: `{e}`"
         st.markdown(reply)
         st.session_state.bio205_chat.append({"role": "assistant", "content": reply})
-
 
 # --------------------------- Entrypoint (Streamlit) ---------------------------
 if __name__ == "__main__":
