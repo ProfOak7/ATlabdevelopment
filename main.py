@@ -44,9 +44,6 @@ elif selected_tab == "Admin View":
 elif selected_tab == "BIO 205 Tutor":
     st.title("BIO 205 Tutor — Human Anatomy")
 
-    # Render the Tutor chat UI (self‑contained; sidebar there has a Reindex button)
-    render_tutor_chat()
-
 
 
 
