@@ -50,7 +50,6 @@ elif selected_tab == "Admin View":
         slo_slots_by_day,
         ncc_slots_by_day,
         ADMIN_PASSCODE,
-        availability_passcode=AVAILABILITY_PASSCODE,
     )
 
 elif selected_tab == "BIO 205 Tutor":
@@ -72,3 +71,4 @@ elif selected_tab == "BIO 205 Tutor":
 
     # Render the tutor chat UI
     render_chat()
+
