@@ -142,7 +142,7 @@ def show_admin_view(bookings_df, slo_slots_by_day, ncc_slots_by_day, admin_passc
     from utils import parse_slot_time
     from bookings import overwrite_bookings
 
-    st.title("Admin Panel")
+   
     passcode_input = st.text_input("Enter admin passcode:", type="password")
 
     if passcode_input != admin_passcode:
@@ -268,6 +268,7 @@ def show_admin_view(bookings_df, slo_slots_by_day, ncc_slots_by_day, admin_passc
             overwrite_bookings(updated_df)
             st.success("Grade successfully saved.")
             st.rerun()
+
 
 
 
