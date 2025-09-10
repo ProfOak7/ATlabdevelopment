@@ -44,10 +44,6 @@ elif selected_tab == "Admin View":
 elif selected_tab == "BIO 205 Tutor":
     st.title("BIO 205 Tutor — Human Anatomy")
 
-    # Initialize the Tutor's knowledge path once per session.
-    if "bio205_knowledge_dir" not in st.session_state:
-        st.session_state["bio205_knowledge_dir"] = _DEFAULT_KNOWLEDGE_DIR
-
     # Index logistics the first time we land on this tab (safe to call multiple times)
     if not st.session_state.get("_bio205_indexed_once"):
         _load_and_index_logistics(st.session_state["bio205_knowledge_dir"])
@@ -55,5 +51,6 @@ elif selected_tab == "BIO 205 Tutor":
 
     # Render the Tutor chat UI (self‑contained; sidebar there has a Reindex button)
     render_tutor_chat()
+
 
 
