@@ -44,13 +44,9 @@ elif selected_tab == "Admin View":
 elif selected_tab == "BIO 205 Tutor":
     st.title("BIO 205 Tutor — Human Anatomy")
 
-    # Index logistics the first time we land on this tab (safe to call multiple times)
-    if not st.session_state.get("_bio205_indexed_once"):
-        _load_and_index_logistics(st.session_state["bio205_knowledge_dir"])
-        st.session_state["_bio205_indexed_once"] = True
-
     # Render the Tutor chat UI (self‑contained; sidebar there has a Reindex button)
     render_tutor_chat()
+
 
 
 
