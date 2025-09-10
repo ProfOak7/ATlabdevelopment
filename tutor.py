@@ -355,25 +355,12 @@ def render_chat(
 
     if show_sidebar_controls:
         st.sidebar.subheader("BIO 205 Tutor")
-        mode = st.sidebar.radio("Mode", ["Coach", "Explainer", "Quizzer", "Editor"], index=0)
+        mode = st.sidebar.radio("Mode", ["Explainer", "Quizzer"], index=0)
         temperature = st.sidebar.slider("Creativity", 0.0, 1.0, 0.4)
 
         # Knowledge folder controls
         if "bio205_knowledge_dir" not in st.session_state:
             st.session_state.bio205_knowledge_dir = _DEFAULT_KNOWLEDGE_DIR
-
-        st.sidebar.text_input("Knowledge folder path", key="bio205_knowledge_dir")
-        st.sidebar.text_input("Preferred section/CRN keyword (optional)", key="bio205_section")
-
-        # Optional file uploader for quick testing
-        up = st.sidebar.file_uploader("Upload a .md/.txt logistics file", type=["md", "txt"], accept_multiple_files=True)
-        if up:
-            tmpdir = pathlib.Path(st.session_state.bio205_knowledge_dir)
-            tmpdir.mkdir(parents=True, exist_ok=True)
-            for f in up:
-                dest = tmpdir / f.name
-                dest.write_bytes(f.read())
-            st.sidebar.success(f"Uploaded {len(up)} file(s) → {tmpdir}")
 
         if st.sidebar.button("🔄 Reindex logistics"):
             _load_and_index_logistics(st.session_state["bio205_knowledge_dir"])
