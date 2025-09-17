@@ -188,9 +188,10 @@ PAGES = {
         ),
     ),
     "BIO 205 Tutor": render_tutor_page,
+    "Tutor Calendar": render_tutor_calendar,
     "Quizlet": render_quizlet,
     "Additional Study Tools": render_tools,
-    "Tutor Calendar": render_tutor_calendar,
+    
     }
 
 # ---------------------- Navigation (sidebar) -----------------------
@@ -203,6 +204,7 @@ PAGES[selected_tab]()
 # ---------------------- Footer ----------------
 st.sidebar.markdown("---")
 st.sidebar.caption("Cuesta BIO 205 • SLO & North Campus")
+
 
 
 
