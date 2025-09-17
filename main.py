@@ -113,9 +113,10 @@ PAGES = {
             ADMIN_PASSCODE,
         ),
     ),
+    "BIO 205 Tutor": render_tutor_page,
     "Quizlet": render_quizlet,
     "Additional Study Tools": render_tools,
-    "BIO 205 Tutor": render_tutor_page,
+    
 }
 
 st.sidebar.title("Navigation")
@@ -127,6 +128,7 @@ PAGES[selected_tab]()
 # ---------------------- Footer ----------------
 st.sidebar.markdown("---")
 st.sidebar.caption("Cuesta BIO 205 • SLO & North Campus")
+
 
 
 
