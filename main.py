@@ -26,7 +26,6 @@ AVAILABILITY_PASSCODE = st.secrets.get("AVAILABILITY_PASSCODE")  # ok if unused
 
 # ---------------------- New Quizlet and Study Tool Links - Code could pull from Secrets but just posted here -------------------------
 QUIZLET_LINKS: List[Dict[str, str]] = st.secrets.get("QUIZLET_LINKS", []) or [
-    {"lab": "Lab Exam 1 Objectives (Canvas Exam Only)", "url": "https://quizlet.com/user/jonathan_okerblom/folders/lab-exam-1?i=4yh5vi&x=1xqt"},
     {"lab": "Lab Exam 2 – Cytology, Histology and Integumentary", "url": "https://quizlet.com/user/jonathan_okerblom/folders/cytology-histology-and-integumentary-lab-exam-2?i=4yh5vi&x=1xqt"},
     {"lab": "Lab Exam 3 – Skeletal System",                   "url": "https://quizlet.com/user/jonathan_okerblom/folders/skeletal-system-lab-exam-3?i=4yh5vi&x=1xqt"},
     {"lab": "Lab Exam 4 – Muscular System",             "url": "https://quizlet.com/user/jonathan_okerblom/folders/muscular-system-lab-exam-4?i=4yh5vi&x=1xqt"},
@@ -128,6 +127,7 @@ PAGES[selected_tab]()
 # ---------------------- Footer ----------------
 st.sidebar.markdown("---")
 st.sidebar.caption("Cuesta BIO 205 • SLO & North Campus")
+
 
 
 
