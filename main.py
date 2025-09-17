@@ -13,7 +13,7 @@ from slots import generate_slots
 from ui_components import show_student_signup, show_admin_view
 
 # Tutor chat UI
-from tutor import render_chat  # <-- this was missing
+from tutor import render_chat  
 
 # ---------------------- App Config ----------------------
 st.set_page_config(page_title="Cuesta Lab | Sign-Up + Tutor", layout="wide")
@@ -71,4 +71,5 @@ elif selected_tab == "BIO 205 Tutor":
 
     # Render the tutor chat UI
     render_chat()
+
 
