@@ -62,7 +62,7 @@ slo_slots_by_day, ncc_slots_by_day = generate_slots()
 # --------------------- Page Renderers --------------------
 def render_quizlet():
     st.title("Quizlet Sets (Labs 1–10)")
-    st.caption("Curated practice for each lab — opens in a new tab.")
+    st.caption("Curated practice for the oral exam of each lab — opens in a new tab.")
     for item in QUIZLET_LINKS:
         cols = st.columns([4, 1])
         cols[0].markdown(f"**{item.get('lab','(Unnamed)')}**")
@@ -115,7 +115,7 @@ PAGES = {
     ),
     "BIO 205 Tutor": render_tutor_page,
     "Quizlet": render_quizlet,
-    "Study Tools": render_tools,
+    "Additional Study Tools": render_tools,
 }
 
 st.sidebar.title("Navigation")
@@ -127,6 +127,7 @@ PAGES[selected_tab]()
 # ---------------------- Footer ----------------
 st.sidebar.markdown("---")
 st.sidebar.caption("Cuesta BIO 205 • SLO & North Campus")
+
 
 
 
