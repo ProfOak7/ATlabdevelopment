@@ -62,13 +62,15 @@ now = datetime.now(pacific)
 bookings_df = load_bookings()
 slo_slots_by_day, ncc_slots_by_day = generate_slots()
 
-#---------------------- Calendar -------------------------
-
-def build_calendar_embed(calendar_id: str, mode="WEEK", tz="America/Los_Angeles"):
+# ---- multi-calendar embed builder (with per-calendar colors) ----
+def build_multi_calendar_embed(calendar_map: dict, mode="WEEK", tz="America/Los_Angeles"):
+    """
+    calendar_map: {calendar_id: "#HEX"}  (include only the calendars you want to show)
+    """
     base = "https://calendar.google.com/calendar/embed?"
     params = {
         "ctz": tz,
-        "mode": mode.lower(),   # 'week' | 'month' | 'agenda'
+        "mode": mode.lower(),   # week | month | agenda
         "showPrint": "0",
         "showTabs": "1",
         "showTitle": "0",
@@ -78,8 +80,10 @@ def build_calendar_embed(calendar_id: str, mode="WEEK", tz="America/Los_Angeles"
         "bgcolor": "#ffffff",
     }
     q = urllib.parse.urlencode(params)
-    src = "&src=" + urllib.parse.quote(calendar_id)
-    return base + q + src
+    src_parts = ""
+    for cid, color in calendar_map.items():
+        src_parts += f"&src={urllib.parse.quote(cid)}&color=%23{color.lstrip('#')}"
+    return base + q + src_parts
     
 # --------------------- Page Renderers --------------------
 def render_quizlet():
@@ -120,6 +124,44 @@ def render_tutor_page():
     # Render the tutor chat UI
     render_chat()
 
+def render_tutor_calendar():
+    st.title("🗓️ Tutor Calendar")
+
+    SLO_CAL = "4f27b9166e3e757575c1f0042907c840a3c97cf5e78223cd8b3820ec9aa4c40b@group.calendar.google.com"
+    NCC_CAL = "c5b35317dad21844604643a07839f8fb26d245443f810b3f228049a9d9f274bc@group.calendar.google.com"
+
+    col1, col2 = st.columns(2)
+    with col1:
+        view = st.radio("View", ["Week", "Month", "Agenda"], horizontal=True, index=0)
+    with col2:
+        show_slo = st.checkbox("Show SLO", value=True)
+        show_ncc = st.checkbox("Show NCC", value=True)
+
+    calendar_map = {}
+    if show_slo:
+        calendar_map[SLO_CAL] = "#0B8043"   # green
+    if show_ncc:
+        calendar_map[NCC_CAL] = "#3F51B5"   # blue
+
+    if not calendar_map:
+        st.info("Select at least one campus to view the calendar.")
+        return
+
+    url = build_multi_calendar_embed(calendar_map, mode=view.upper(), tz="America/Los_Angeles")
+
+    components.html(
+        f"""
+        <div style="position:relative;">
+            <iframe
+                src="{url}"
+                style="border:0;width:100%;height:780px"
+                frameborder="0"
+                scrolling="no"></iframe>
+        </div>
+        """,
+        height=800,
+    )
+
 # --------------------- Navigation -----------------------
 PAGES = {
     "Sign-Up": lambda: (
@@ -138,31 +180,8 @@ PAGES = {
     "BIO 205 Tutor": render_tutor_page,
     "Quizlet": render_quizlet,
     "Additional Study Tools": render_tools,
-    "Tutor Calendar": lambda: (
-        st.title("🗓️ Tutor Calendar"),
-        (
-            calendar_id := "4f27b9166e3e757575c1f0042907c840a3c97cf5e78223cd8b3820ec9aa4c40b@group.calendar.google.com"
-        ),
-        (
-            view := st.radio("View", ["Week", "Month", "Agenda"], horizontal=True, index=0)
-        ),
-        (
-            url := build_calendar_embed(calendar_id, mode=view.upper(), tz="America/Los_Angeles")
-        ),
-        components.html(
-            f"""
-            <div style="position:relative;">
-                <iframe
-                    src="{url}"
-                    style="border:0;width:100%;height:780px"
-                    frameborder="0"
-                    scrolling="no"></iframe>
-            </div>
-            """,
-            height=800,
-        ),
-    ),
-}
+    "Tutor Calendar": render_tutor_calendar,
+
 # ---------------------- Navigation (sidebar) -----------------------
 st.sidebar.title("Navigation")
 selected_tab = st.sidebar.radio("Go to:", list(PAGES.keys()), index=0)
@@ -173,6 +192,7 @@ PAGES[selected_tab]()
 # ---------------------- Footer ----------------
 st.sidebar.markdown("---")
 st.sidebar.caption("Cuesta BIO 205 • SLO & North Campus")
+
 
 
 
