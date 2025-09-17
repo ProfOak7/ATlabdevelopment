@@ -69,7 +69,7 @@ def render_quizlet():
         cols[1].markdown(f"[Open ➜]({item.get('url','#')})")
 
 def render_tools():
-    st.title("Study Tools: Photogrammetry & Anki")
+    st.title("Additional Study Tools")
     st.caption("Extra practice resources built by our team.")
     for t in TOOLS_LINKS:
         with st.container(border=True):
@@ -127,5 +127,6 @@ PAGES[selected_tab]()
 # ---------------------- Footer ----------------
 st.sidebar.markdown("---")
 st.sidebar.caption("Cuesta BIO 205 • SLO & North Campus")
+
 
 
