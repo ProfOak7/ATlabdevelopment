@@ -29,8 +29,8 @@ AVAILABILITY_PASSCODE = st.secrets.get("AVAILABILITY_PASSCODE")  # ok if unused
 # [[QUIZLET_LINKS]] lab = "Lab 1 – Intro" url = "https://quizlet.com/..."
 # [[TOOLS_LINKS]]   name = "Photogrammetry Library" desc = "3D scans..." url = "https://..."
 QUIZLET_LINKS: List[Dict[str, str]] = st.secrets.get("QUIZLET_LINKS", []) or [
-    {"lab": "Lab 1 – Intro & Scientific Method", "url": "https://quizlet.com/"},
-    {"lab": "Lab 2 – Microscopy & Cells",        "url": "https://quizlet.com/"},
+    {"lab": "Lab Exam 1", "url": "https://quizlet.com/user/jonathan_okerblom/folders/lab-exam-1?i=4yh5vi&x=1xqt"},
+    {"lab": "Lab Exam 2 – Cytology, Histology and Integumentary", "url": "https://quizlet.com/user/jonathan_okerblom/folders/cytology-histology-and-integumentary-lab-exam-2?i=4yh5vi&x=1xqt"},
     {"lab": "Lab 3 – Tissues",                   "url": "https://quizlet.com/"},
     {"lab": "Lab 4 – Integumentary",             "url": "https://quizlet.com/"},
     {"lab": "Lab 5 – Skeletal (Bones & Markings)","url": "https://quizlet.com/"},
@@ -135,3 +135,4 @@ PAGES[selected_tab]()
 # ---------------------- Footer (optional) ----------------
 st.sidebar.markdown("---")
 st.sidebar.caption("Cuesta BIO 205 • SLO & North Campus")
+
