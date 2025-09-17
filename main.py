@@ -137,6 +137,15 @@ def render_tutor_calendar():
         show_slo = st.checkbox("Show SLO", value=True)
         show_ncc = st.checkbox("Show NCC", value=True)
 
+    # 👉 Legend at the top
+    st.markdown(
+        """
+        ### Legend  
+        🟩 **SLO Campus** (AT Lab / SSC)  
+        🟦 **NCC Campus** (AT Lab)  
+        """
+    )
+
     calendar_map = {}
     if show_slo:
         calendar_map[SLO_CAL] = "#0B8043"   # green
@@ -149,7 +158,7 @@ def render_tutor_calendar():
 
     url = build_multi_calendar_embed(calendar_map, mode=view.upper(), tz="America/Los_Angeles")
 
-    components.html(
+    st.components.v1.html(
         f"""
         <div style="position:relative;">
             <iframe
@@ -161,6 +170,7 @@ def render_tutor_calendar():
         """,
         height=800,
     )
+
 
 # --------------------- Navigation -----------------------
 PAGES = {
@@ -193,6 +203,7 @@ PAGES[selected_tab]()
 # ---------------------- Footer ----------------
 st.sidebar.markdown("---")
 st.sidebar.caption("Cuesta BIO 205 • SLO & North Campus")
+
 
 
 
