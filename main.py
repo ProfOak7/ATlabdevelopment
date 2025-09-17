@@ -24,30 +24,22 @@ st.set_page_config(page_title="Cuesta Lab | Sign-Up + Tutor", layout="wide")
 ADMIN_PASSCODE = st.secrets.get("ADMIN_PASSCODE")
 AVAILABILITY_PASSCODE = st.secrets.get("AVAILABILITY_PASSCODE")  # ok if unused
 
-# Optional: link lists from secrets (preferred), else use local fallbacks.
-# Example secrets.toml:
-# [[QUIZLET_LINKS]] lab = "Lab 1 – Intro" url = "https://quizlet.com/..."
-# [[TOOLS_LINKS]]   name = "Photogrammetry Library" desc = "3D scans..." url = "https://..."
+# ---------------------- New Quizlet and Study Tool Links - Code could pull from Secrets but just posted here -------------------------
 QUIZLET_LINKS: List[Dict[str, str]] = st.secrets.get("QUIZLET_LINKS", []) or [
     {"lab": "Lab Exam 1", "url": "https://quizlet.com/user/jonathan_okerblom/folders/lab-exam-1?i=4yh5vi&x=1xqt"},
     {"lab": "Lab Exam 2 – Cytology, Histology and Integumentary", "url": "https://quizlet.com/user/jonathan_okerblom/folders/cytology-histology-and-integumentary-lab-exam-2?i=4yh5vi&x=1xqt"},
-    {"lab": "Lab 3 – Tissues",                   "url": "https://quizlet.com/"},
-    {"lab": "Lab 4 – Integumentary",             "url": "https://quizlet.com/"},
-    {"lab": "Lab 5 – Skeletal (Bones & Markings)","url": "https://quizlet.com/"},
-    {"lab": "Lab 6 – Articulations",             "url": "https://quizlet.com/"},
-    {"lab": "Lab 7 – Muscular (Names/Actions)",  "url": "https://quizlet.com/"},
-    {"lab": "Lab 8 – Nervous (CNS/PNS)",         "url": "https://quizlet.com/"},
-    {"lab": "Lab 9 – Special Senses",            "url": "https://quizlet.com/"},
-    {"lab": "Lab 10 – Cardiovascular",           "url": "https://quizlet.com/"},
+    {"lab": "Lab Exam 3 – Skeletal System",                   "url": "https://quizlet.com/user/jonathan_okerblom/folders/skeletal-system-lab-exam-3?i=4yh5vi&x=1xqt"},
+    {"lab": "Lab Exam 4 – Muscular System",             "url": "https://quizlet.com/user/jonathan_okerblom/folders/muscular-system-lab-exam-4?i=4yh5vi&x=1xqt"},
+    {"lab": "Lab Exam 5 – Nervous System", "url": "https://quizlet.com/user/jonathan_okerblom/folders/nervous-system-lab-exam-5?i=4yh5vi&x=1xqt"},
+    {"lab": "Lab Exam 6 – Sensory and Special Senses",             "url": "https://quizlet.com/user/jonathan_okerblom/folders/sensory-and-special-senses-lab-exam-6-oral?i=4yh5vi&x=1xqt"},
+    {"lab": "Lab Exam 7 – Circulatory/Lymphatic Systems",  "url": "https://quizlet.com/user/jonathan_okerblom/folders/circulatorylymphatic-systems-lab-exam-7?i=4yh5vi&x=1xqt"},
+    {"lab": "Lab Exam 8 – Respiratory System",         "url": "https://quizlet.com/858726102/respiratory-system-lab-8-exam-flash-cards/?i=4yh5vi&x=1jqt"},
+    {"lab": "Lab Exam 9 – Digestive System",            "url": "https://quizlet.com/user/jonathan_okerblom/folders/digestive-system-lab-exam-9?i=4yh5vi&x=1xqt"},
+    {"lab": "Lab Exam 10 – Urinary and Reproductive Systems",           "url": "https://quizlet.com/user/jonathan_okerblom/folders/urinary-and-reproductive-lab-10?i=4yh5vi&x=1xqt"},
 ]
 
 TOOLS_LINKS: List[Dict[str, str]] = st.secrets.get("TOOLS_LINKS", []) or [
-    {
-        "name": "Photogrammetry Library (3D Anatomy Models)",
-        "desc": "High-res 3D scans of our lab models for at-home review.",
-        "url": "https://example.edu/photogrammetry",
-    },
-    {
+        {
         "name": "Anki Decks (free)",
         "desc": "Download spaced-repetition decks aligned to BIO 205 labs.",
         "url": "https://ankiweb.net/",
@@ -132,7 +124,8 @@ selected_tab = st.sidebar.radio("Go to:", list(PAGES.keys()), index=0)
 # ---------------------- Routing -------------------------
 PAGES[selected_tab]()
 
-# ---------------------- Footer (optional) ----------------
+# ---------------------- Footer ----------------
 st.sidebar.markdown("---")
 st.sidebar.caption("Cuesta BIO 205 • SLO & North Campus")
+
 
