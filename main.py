@@ -70,7 +70,7 @@ def render_quizlet():
 
 def render_tools():
     st.title("Additional Study Tools")
-    st.caption("Extra practice resources built by our team.")
+    st.caption("Extra practice resources built by our team (currently under construction).")
     for t in TOOLS_LINKS:
         with st.container(border=True):
             st.markdown(f"**{t.get('name','(Untitled)')}**")
@@ -127,6 +127,7 @@ PAGES[selected_tab]()
 # ---------------------- Footer ----------------
 st.sidebar.markdown("---")
 st.sidebar.caption("Cuesta BIO 205 • SLO & North Campus")
+
 
 
 
