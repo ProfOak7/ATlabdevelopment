@@ -8,6 +8,10 @@ from typing import List, Dict
 import pytz
 import streamlit as st
 
+#for calendar embed
+import urllib.parse
+import streamlit.components.v1 as components
+
 # Local modules for the sign-up app
 from bookings import load_bookings
 from slots import generate_slots
@@ -58,6 +62,25 @@ now = datetime.now(pacific)
 bookings_df = load_bookings()
 slo_slots_by_day, ncc_slots_by_day = generate_slots()
 
+#---------------------- Calendar -------------------------
+
+def build_calendar_embed(calendar_id: str, mode="WEEK", tz="America/Los_Angeles"):
+    base = "https://calendar.google.com/calendar/embed?"
+    params = {
+        "ctz": tz,
+        "mode": mode.lower(),   # 'week' | 'month' | 'agenda'
+        "showPrint": "0",
+        "showTabs": "1",
+        "showTitle": "0",
+        "showDate": "1",
+        "showNav": "1",
+        "wkst": "1",
+        "bgcolor": "#ffffff",
+    }
+    q = urllib.parse.urlencode(params)
+    src = "&src=" + urllib.parse.quote(calendar_id)
+    return base + q + src
+    
 # --------------------- Page Renderers --------------------
 def render_quizlet():
     st.title("Quizlet Sets (Labs 1–10)")
@@ -115,11 +138,31 @@ PAGES = {
     "BIO 205 Tutor": render_tutor_page,
     "Quizlet": render_quizlet,
     "Additional Study Tools": render_tools,
-    
+    "Tutor Calendar": lambda: (
+        st.title("🗓️ Tutor Calendar"),
+        (
+            calendar_id := "4f27b9166e3e757575c1f0042907c840a3c97cf5e78223cd8b3820ec9aa4c40b@group.calendar.google.com"
+        ),
+        (
+            view := st.radio("View", ["Week", "Month", "Agenda"], horizontal=True, index=0)
+        ),
+        (
+            url := build_calendar_embed(calendar_id, mode=view.upper(), tz="America/Los_Angeles")
+        ),
+        components.html(
+            f"""
+            <div style="position:relative;">
+                <iframe
+                    src="{url}"
+                    style="border:0;width:100%;height:780px"
+                    frameborder="0"
+                    scrolling="no"></iframe>
+            </div>
+            """,
+            height=800,
+        ),
+    ),
 }
-
-st.sidebar.title("Navigation")
-selected_tab = st.sidebar.radio("Go to:", list(PAGES.keys()), index=0)
 
 # ---------------------- Routing -------------------------
 PAGES[selected_tab]()
