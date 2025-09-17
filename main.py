@@ -20,9 +20,9 @@ from tutor import render_chat
 st.set_page_config(page_title="Cuesta Lab | Sign-Up + Tutor", layout="wide")
 
 # ---------------------- Secrets -------------------------
-# Use .get so app still loads if a secret is absent (you can handle None in the UI)
+# Use .get so app still loads if a secret is absent
 ADMIN_PASSCODE = st.secrets.get("ADMIN_PASSCODE")
-AVAILABILITY_PASSCODE = st.secrets.get("AVAILABILITY_PASSCODE")  # ok if unused
+AVAILABILITY_PASSCODE = st.secrets.get("AVAILABILITY_PASSCODE")  
 
 # ---------------------- New Quizlet and Study Tool Links - Code could pull from Secrets but just posted here -------------------------
 QUIZLET_LINKS: List[Dict[str, str]] = st.secrets.get("QUIZLET_LINKS", []) or [
@@ -127,6 +127,7 @@ PAGES[selected_tab]()
 # ---------------------- Footer ----------------
 st.sidebar.markdown("---")
 st.sidebar.caption("Cuesta BIO 205 • SLO & North Campus")
+
 
 
 
