@@ -163,6 +163,9 @@ PAGES = {
         ),
     ),
 }
+# ---------------------- Navigation (sidebar) -----------------------
+st.sidebar.title("Navigation")
+selected_tab = st.sidebar.radio("Go to:", list(PAGES.keys()), index=0)
 
 # ---------------------- Routing -------------------------
 PAGES[selected_tab]()
@@ -170,6 +173,7 @@ PAGES[selected_tab]()
 # ---------------------- Footer ----------------
 st.sidebar.markdown("---")
 st.sidebar.caption("Cuesta BIO 205 • SLO & North Campus")
+
 
 
 
