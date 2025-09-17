@@ -142,7 +142,7 @@ def render_tutor_calendar():
         """
         ### Legend  
         🟩 **SLO Campus** (AT Lab / SSC)  
-        🟦 **NCC Campus** (AT Lab)  
+        🟦 **NCC Campus** (AT Lab / SSC)  
         """
     )
 
@@ -204,6 +204,7 @@ PAGES[selected_tab]()
 # ---------------------- Footer ----------------
 st.sidebar.markdown("---")
 st.sidebar.caption("Cuesta BIO 205 • SLO & North Campus")
+
 
 
 
