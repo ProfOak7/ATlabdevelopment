@@ -175,7 +175,7 @@ def render_tutor_calendar():
 # --------------------- Navigation -----------------------
 PAGES = {
     "Sign-Up": lambda: (
-        st.title("Student Appointment Sign-Up"),
+        st.title("Student Appointment Sign-Up (currently not active, but you can use other tools in the left hand navigation menu"),
         show_student_signup(bookings_df, slo_slots_by_day, ncc_slots_by_day, now),
     ),
     "Admin View": lambda: (
@@ -204,6 +204,7 @@ PAGES[selected_tab]()
 # ---------------------- Footer ----------------
 st.sidebar.markdown("---")
 st.sidebar.caption("Cuesta BIO 205 • SLO & North Campus")
+
 
 
 
